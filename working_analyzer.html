@@ -664,7 +664,7 @@
             <div id="modalHeader" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
                 <!-- Header content will be populated -->
             </div>
-            <div id="modalContent" class="p-6 overflow-y-auto max-h-[75vh]">
+            <div id="modalContent" class="p-6 overflow-y-auto max-h-[85vh]">
                 <!-- Content will be populated -->
             </div>
         </div>
@@ -1256,7 +1256,7 @@
                                 <button class="copy-button" onclick="copyToClipboard('formatted-content-${block.id}')">
                                     <i class="fas fa-copy mr-1"></i>Copy
                                 </button>
-                                <pre id="formatted-content-${block.id}" class="text-sm syntax-highlight">${highlightSyntax(formatContent(block.content, block.type), block.type)}</pre>
+                                <pre id="formatted-content-${block.id}" class="text-sm syntax-highlight whitespace-pre-wrap break-words max-h-96 overflow-y-auto">${highlightSyntax(formatContent(block.content, block.type), block.type)}</pre>
                             </div>
                         </div>
                         
@@ -1266,7 +1266,7 @@
                                 <button class="copy-button" onclick="copyToClipboard('raw-content-${block.id}')">
                                     <i class="fas fa-copy mr-1"></i>Copy
                                 </button>
-                                <pre id="raw-content-${block.id}" class="text-sm">${escapeHtml(block.content)}</pre>
+                                <pre id="raw-content-${block.id}" class="text-sm whitespace-pre-wrap break-words max-h-96 overflow-y-auto">${escapeHtml(block.content)}</pre>
                             </div>
                         </div>
                         
@@ -1320,8 +1320,40 @@
                     const parsed = JSON.parse(content);
                     return JSON.stringify(parsed, null, 2);
                 } else if (type === 'XML') {
-                    // Basic XML formatting
-                    return content.replace(/></g, '>\n<');
+                    // Enhanced XML formatting with proper indentation
+                    let formatted = content;
+                    
+                    // Add line breaks between tags
+                    formatted = formatted.replace(/></g, '>\n<');
+                    
+                    // Add proper indentation
+                    const lines = formatted.split('\n');
+                    let indentLevel = 0;
+                    const indentedLines = [];
+                    
+                    for (let line of lines) {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine) continue;
+                        
+                        // Decrease indent for closing tags
+                        if (trimmedLine.startsWith('</')) {
+                            indentLevel = Math.max(0, indentLevel - 1);
+                        }
+                        
+                        // Add indentation
+                        const indent = '  '.repeat(indentLevel);
+                        indentedLines.push(indent + trimmedLine);
+                        
+                        // Increase indent for opening tags (but not self-closing or closing tags)
+                        if (trimmedLine.startsWith('<') && 
+                            !trimmedLine.startsWith('</') && 
+                            !trimmedLine.endsWith('/>') &&
+                            !trimmedLine.includes('<?')) {
+                            indentLevel++;
+                        }
+                    }
+                    
+                    return indentedLines.join('\n');
                 } else {
                     return content;
                 }
