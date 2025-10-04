@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGW Enterprise PSP Analyzer - Robust</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .xml-tag { color: #0066cc; font-weight: bold; }
+        .xml-attr { color: #ff6600; }
+        .xml-value { color: #009900; }
+        .xml-declaration { color: #666; font-style: italic; }
+        .xml-cdata { background-color: #ffe6f2; }
+        .json-key { color: #ff6600; }
+        .json-string { color: #009900; }
+        .json-number { color: #ff6600; }
+        .json-boolean { color: #0066cc; }
+        .json-null { color: #999; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; overflow-y: auto; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+    <div class="flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white min-h-screen p-4">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
+                <p class="text-sm text-gray-400">PSP Analyzer v2.1</p>
+            </div>
+            <nav class="space-y-2">
+                <a href="#" onclick="showSection('upload')" class="block p-3 rounded bg-blue-600">📤 Upload & Analyze</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <div id="upload-section">
+                <h2 class="text-3xl font-bold text-white mb-6">Upload & Analyze</h2>
+                <div class="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+                    <div class="border-2 border-dashed border-white/30 rounded-lg p-8 text-center">
+                        <div class="text-white/70 mb-4">
+                            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-2">Upload Transaction Log</h3>
+                        <p class="text-white/70 mb-4">Drag and drop your JSON log file here, or click to browse</p>
+                        <input type="file" id="fileInput" accept=".json" class="hidden">
+                        <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">Choose File</button>
+                    </div>
+                    
+                    <div id="processing-status" class="mt-4 hidden">
+                        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+                                <span id="status-text">Processing transaction log file...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="error-status" class="mt-4 hidden">
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <div class="font-bold">Error: Failed to parse file</div>
+                            <div id="error-text"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="blocks-container" class="mt-8 space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="blockModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-xl font-bold"></h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let globalBlocks = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showProcessingStatus('Reading file...');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    processFileContent(e.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function showProcessingStatus(message) {
+            document.getElementById('status-text').textContent = message;
+            document.getElementById('processing-status').classList.remove('hidden');
+            document.getElementById('error-status').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-status').classList.remove('hidden');
+            document.getElementById('processing-status').classList.add('hidden');
+        }
+
+        function hideStatus() {
+            document.getElementById('processing-status').classList.add('hidden');
+            document.getElementById('error-status').classList.add('hidden');
+        }
+
+        function processFileContent(content) {
+            showProcessingStatus('Parsing JSON content...');
+            
+            try {
+                // Try multiple parsing strategies
+                let data = null;
+                
+                // Strategy 1: Direct JSON parse
+                try {
+                    data = JSON.parse(content);
+                } catch (e) {
+                    // Strategy 2: Fix common JSON issues
+                    let fixedContent = content.trim();
+                    
+                    // Remove trailing brackets that don't have opening brackets
+                    if (fixedContent.endsWith(']') && !fixedContent.startsWith('[')) {
+                        fixedContent = fixedContent.slice(0, -1).trim();
+                    }
+                    
+                    // If it's a single object, wrap it in an array
+                    if (fixedContent.startsWith('{') && fixedContent.endsWith('}')) {
+                        fixedContent = '[' + fixedContent + ']';
+                    }
+                    
+                    // Try parsing the fixed content
+                    try {
+                        data = JSON.parse(fixedContent);
+                    } catch (e2) {
+                        // Strategy 3: JSONL format (line by line)
+                        const lines = content.split('\\n').filter(line => line.trim());
+                        data = [];
+                        for (const line of lines) {
+                            try {
+                                const parsed = JSON.parse(line);
+                                data.push(parsed);
+                            } catch (e3) {
+                                // Skip invalid lines
+                            }
+                        }
+                        
+                        if (data.length === 0) {
+                            throw new Error('Unable to parse JSON content. Please check file format.');
+                        }
+                    }
+                }
+                
+                // Ensure data is an array
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+                
+                showProcessingStatus('Extracting transaction blocks...');
+                setTimeout(() => {
+                    processData(data);
+                }, 100);
+                
+            } catch (error) {
+                showError(error.message + '\\nTip: Ensure your file is valid JSON format (array of objects or JSONL format)');
+            }
+        }
+
+        function processData(data) {
+            const blocks = [];
+            
+            data.forEach((entry, index) => {
+                if (entry.content) {
+                    const match = entry.content.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\]\[MESSAGE_ENVELOPE_EXTRA\]/s);
+                    if (match) {
+                        const content = match[1];
+                        let type = 'TEXT';
+                        let psp = 'Unknown';
+                        
+                        // Determine type
+                        if (content.includes('<?xml') || content.includes('<M ') || content.includes('<F ')) {
+                            type = 'XML';
+                        } else if (content.startsWith('{') || content.startsWith('[')) {
+                            type = 'JSON';
+                        }
+                        
+                        // Determine PSP
+                        if (content.includes('alipay') || content.includes('ALIPAY') || content.includes('ALIPW')) {
+                            psp = 'Alipay';
+                        } else if (content.includes('stone') || content.includes('STONE')) {
+                            psp = 'Stone';
+                        } else if (content.includes('mundipagg') || content.includes('MUNDIPAGG')) {
+                            psp = 'Mundipagg';
+                        }
+                        
+                        // Determine direction
+                        let direction = 'UNKNOWN';
+                        if (content.includes('INBOUND') || entry.content.includes('INBOUND')) {
+                            direction = 'INBOUND';
+                        } else if (content.includes('OUTBOUND') || entry.content.includes('OUTBOUND')) {
+                            direction = 'OUTBOUND';
+                        }
+                        
+                        blocks.push({
+                            id: index + 1,
+                            content: content,
+                            type: type,
+                            psp: psp,
+                            size: content.length,
+                            direction: direction,
+                            timestamp: entry.__time__ || 'Unknown'
+                        });
+                    }
+                }
+            });
+            
+            globalBlocks = blocks;
+            hideStatus();
+            
+            if (blocks.length === 0) {
+                showError('No transaction blocks found in the uploaded file. Please check if the file contains OpenGW message logs.');
+                return;
+            }
+            
+            displayBlocks(blocks);
+        }
+
+        function displayBlocks(blocks) {
+            const container = document.getElementById('blocks-container');
+            container.innerHTML = '';
+            
+            // Add summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-4';
+            summaryDiv.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-2">Analysis Summary</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${blocks.length}</div>
+                        <div class="text-white/70">Transaction Blocks</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${new Set(blocks.map(b => b.psp)).size}</div>
+                        <div class="text-white/70">PSPs Detected</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${blocks.reduce((sum, b) => sum + b.size, 0)}</div>
+                        <div class="text-white/70">Total Bytes</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(summaryDiv);
+            
+            blocks.forEach(block => {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-all';
+                blockDiv.onclick = () => showBlockDetails(block);
+                
+                const typeColor = block.type === 'JSON' ? 'bg-green-500' : block.type === 'XML' ? 'bg-orange-500' : 'bg-blue-500';
+                const directionColor = block.direction === 'INBOUND' ? 'bg-purple-500' : block.direction === 'OUTBOUND' ? 'bg-pink-500' : 'bg-gray-500';
+                
+                blockDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl font-bold text-white">Block ${block.id}</div>
+                            <span class="${typeColor} text-white px-3 py-1 rounded-full text-sm font-medium">${block.type}</span>
+                            <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">${block.psp}</span>
+                            <span class="${directionColor} text-white px-3 py-1 rounded-full text-sm">${block.direction}</span>
+                        </div>
+                        <div class="text-white/70 text-sm">${block.size} bytes</div>
+                    </div>
+                    <div class="mt-2 text-white/80">${block.direction} - ${block.psp} processing</div>
+                    <div class="mt-2 text-blue-300 text-sm">View Details →</div>
+                `;
+                
+                container.appendChild(blockDiv);
+            });
+        }
+
+        function showBlockDetails(block) {
+            document.getElementById('modalTitle').textContent = `Block ${block.id} Details`;
+            
+            const formattedContent = formatContent(block.content, block.type);
+            const highlightedContent = highlightSyntax(formattedContent, block.type);
+            
+            document.getElementById('modalContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex flex-wrap gap-2 text-sm">
+                        <span class="bg-gray-100 px-3 py-1 rounded">Type: ${block.type}</span>
+                        <span class="bg-gray-100 px-3 py-1 rounded">PSP: ${block.psp}</span>
+                        <span class="bg-gray-100 px-3 py-1 rounded">Direction: ${block.direction}</span>
+                        <span class="bg-gray-100 px-3 py-1 rounded">Size: ${block.size} bytes</span>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">Formatted Content:</h4>
+                        <div class="bg-white p-4 rounded border max-h-96 overflow-y-auto">
+                            <pre class="text-sm whitespace-pre-wrap">${highlightedContent}</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">Raw Content:</h4>
+                        <div class="bg-white p-4 rounded border max-h-96 overflow-y-auto">
+                            <pre class="text-sm whitespace-pre-wrap">${escapeHtml(block.content)}</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">🔍 Transaction Analysis:</h4>
+                        <div class="space-y-2">
+                            ${generateAnalysis(block)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('blockModal').classList.add('show');
+        }
+
+        function generateAnalysis(block) {
+            const analysis = [];
+            
+            // Analyze content for insights
+            if (block.content.includes('RISK_REJECT')) {
+                analysis.push('<div class="text-red-600">⚠️ <strong>Risk Rejection Detected:</strong> Transaction was rejected due to security reasons</div>');
+            }
+            
+            if (block.content.includes('resultStatus":"F"')) {
+                analysis.push('<div class="text-red-600">❌ <strong>Failed Transaction:</strong> Transaction completed with failure status</div>');
+            }
+            
+            if (block.content.includes('resultStatus":"S"')) {
+                analysis.push('<div class="text-green-600">✅ <strong>Successful Transaction:</strong> Transaction completed successfully</div>');
+            }
+            
+            if (block.psp === 'Alipay') {
+                analysis.push('<div class="text-blue-600">🌏 <strong>Alipay Processing:</strong> International payment gateway for Asian markets</div>');
+            }
+            
+            if (block.direction === 'INBOUND') {
+                analysis.push('<div class="text-purple-600">📥 <strong>Inbound Response:</strong> Response received from payment service provider</div>');
+            } else if (block.direction === 'OUTBOUND') {
+                analysis.push('<div class="text-pink-600">📤 <strong>Outbound Request:</strong> Request sent to payment service provider</div>');
+            }
+            
+            // Extract amount if present
+            const amountMatch = block.content.match(/"value":"(\\d+)"/);
+            if (amountMatch) {
+                analysis.push(`<div class="text-green-600">💰 <strong>Transaction Amount:</strong> ${amountMatch[1]} (currency units)</div>`);
+            }
+            
+            if (analysis.length === 0) {
+                analysis.push('<div class="text-gray-600">ℹ️ Standard transaction processing block</div>');
+            }
+            
+            return analysis.join('');
+        }
+
+        function closeModal() {
+            document.getElementById('blockModal').classList.remove('show');
+        }
+
+        function formatContent(content, type) {
+            try {
+                if (type === 'JSON') {
+                    // Handle nested JSON
+                    function formatNestedJSON(obj) {
+                        if (typeof obj === 'string') {
+                            if ((obj.startsWith('{') && obj.endsWith('}')) || (obj.startsWith('[') && obj.endsWith(']'))) {
+                                try {
+                                    return formatNestedJSON(JSON.parse(obj));
+                                } catch (e) {
+                                    return obj;
+                                }
+                            }
+                            return obj;
+                        } else if (Array.isArray(obj)) {
+                            return obj.map(formatNestedJSON);
+                        } else if (obj && typeof obj === 'object') {
+                            const formatted = {};
+                            for (const [key, value] of Object.entries(obj)) {
+                                formatted[key] = formatNestedJSON(value);
+                            }
+                            return formatted;
+                        }
+                        return obj;
+                    }
+                    
+                    const parsed = JSON.parse(content);
+                    const formatted = formatNestedJSON(parsed);
+                    return JSON.stringify(formatted, null, 2);
+                } else if (type === 'XML') {
+                    // Handle mixed XML/JSON content
+                    if (content.includes('<![CDATA[{') && content.includes('}]]>')) {
+                        return content
+                            .replace(/></g, '>\\n<')
+                            .replace(/(<!\[CDATA\[)(\{.*?\})(\]\]>)/gs, (match, start, json, end) => {
+                                try {
+                                    const parsed = JSON.parse(json);
+                                    const formatted = JSON.stringify(parsed, null, 4);
+                                    return start + '\\n' + formatted + '\\n' + end;
+                                } catch (e) {
+                                    return match;
+                                }
+                            })
+                            .split('\\n')
+                            .map((line) => {
+                                const depth = Math.max(0, (line.match(/</g) || []).length - (line.match(/<\//g) || []).length);
+                                return '  '.repeat(depth) + line.trim();
+                            })
+                            .join('\\n');
+                    } else {
+                        return content
+                            .replace(/></g, '>\\n<')
+                            .split('\\n')
+                            .map((line) => {
+                                const depth = Math.max(0, (line.match(/</g) || []).length - (line.match(/<\//g) || []).length);
+                                return '  '.repeat(depth) + line.trim();
+                            })
+                            .join('\\n');
+                    }
+                }
+                return content;
+            } catch (error) {
+                return content;
+            }
+        }
+
+        function highlightSyntax(content, type) {
+            if (type === 'JSON') {
+                return content
+                    .replace(/("[\w\d_-]+")(\s*:)/g, '<span class="json-key">$1</span>$2')
+                    .replace(/:\s*(".*?")/g, ': <span class="json-string">$1</span>')
+                    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+                    .replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>')
+                    .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
+            } else if (type === 'XML') {
+                const escaped = escapeHtml(content);
+                return escaped
+                    .replace(/(&lt;\?xml[^&]*\?&gt;)/g, '<span class="xml-declaration">$1</span>')
+                    .replace(/(&lt;!\[CDATA\[)/g, '<span class="xml-cdata">$1')
+                    .replace(/(\]\]&gt;)/g, '$1</span>')
+                    .replace(/(&lt;\/?[\w\d-]+)/g, '<span class="xml-tag">$1</span>')
+                    .replace(/(&gt;)/g, '<span class="xml-tag">$1</span>')
+                    .replace(/([\w\d-]+)=(".*?")/g, '<span class="xml-attr">$1</span>=<span class="xml-value">$2</span>');
+            }
+            return escapeHtml(content);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showSection(section) {
+            // Simple section switching
+        }
+    </script>
+</body>
+</html>

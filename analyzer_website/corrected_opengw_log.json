@@ -1,0 +1,15 @@
+[
+  {
+    "__time__": "1758712191",
+    "__topic__": "",
+    "__source__": "33.136.89.167",
+    "__tag__:__phynode__": "33.136.118.42",
+    "__tag__:__user_defined_id__": "iopengw-us44-ds,iopengw-us,tnlog-us-all",
+    "__tag__:__env__": "prod",
+    "__tag__:__POD_NAME__": "iopengwprodusgz00c0-vx9cj-7s59r",
+    "content": "2025-09-24 11:09:47,312 [2191366d17587121813745122e9386 0.1.1.0 - //117.51.0.3/ - /ams/api/v1/payments/pay] INFO  OPENGW_MESSAGE_LOG - [0,ALIPW3BR,,][HTTPS][OPENAPIv2][INBOUND_RESPONSE][null][MESSAGE_ENVELOPE_CONTENT][{\"result\":{\"resultCode\":\"RISK_REJECT\",\"resultMessage\":\"The transaction cannot be further processed because of security reasons. If the user has already paid for the transaction, the transaction will be refunded.\",\"resultStatus\":\"F\"}}][MESSAGE_ENVELOPE_EXTRA]{\"API_STANDARD_NAME\":\"OPENAPIv2\",\"IS_REDIRECT\":false,\"MESSAGE_DIRECTION\":\"RESPONSE\",\"MESSAGE_TYPE\":\"INBOUND_RESPONSE\",\"clientId\":\"5YC42Y2ZPWB003743\",\"headers\":{\"Content-Type\":\"application/json\",\"client-id\":\"5YC42Y2ZPWB003743\",\"response-time\":\"2025-09-24T11:09:47Z\",\"signature\":\"algorithm=RSA256,keyVersion=1,signature=T6AUxy2q94Xy3vqBZipYeloA4qGnigJVKaM3w67C1VO8CIi6N5lfqV92yDX1fVJCai6cE65bt%2BOM1GZWQq2G7qhq36SBynyd6QTJ0lhphTJCz%2FydlVztlp%2B2%2FqLBwSTvwygJmLkMvBc%2FutbTUUY75ubDRia0c54YvGTvwEuOedLXMO2xTYgT6aruzMbCqbG0VcdHEdTQIOj%2BENKkX%2FV7FAi2ysrg5wfGgyqQ78Jvy%2BC0ybiNya%2FPiN6zcPOzdbEzQ0Jk67SxDvgsXsjKnvlTpweGGtIj2KcWHcM%2B7jgx9v%2BcywJppEWvZVAVWk2tmwE9%2BCTVJAEzUgb5Iq7V6SCSyA%3D%3D\",\"tracerId\":\"2191366d17587121813745122e9386.0.1.1\"},\"httpMethod\":\"POST\",\"signatureInfo\":{},\"uri\":\"/ams/api/v1/payments/pay\"}",
+    "__tag__:__hostname__": "iopengw-10-9127",
+    "__tag__:__alipay_zone__": "USGZ00C",
+    "__tag__:__path__": "/home/admin/logs/iopengw/opengw-message.log"
+  }
+]
