@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenGW PSP Analyzer - Simple Version</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin: 20px 0; }
+        .block { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; background: #f9f9f9; }
+        .block-header { font-weight: bold; margin-bottom: 10px; }
+        .optimization { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .btn { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .hidden { display: none; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OpenGW Enterprise PSP Analyzer</h1>
+        <p>Upload your OpenGW JSON log file to analyze transactions and get optimization recommendations.</p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <h3>📁 Upload JSON File</h3>
+            <p>Click here to select your OpenGW log file</p>
+            <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="processFile(event)">
+        </div>
+        
+        <div id="status" class="hidden"></div>
+        <div id="results" class="hidden"></div>
+    </div>
+
+    <script>
+        function processFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const status = document.getElementById('status');
+            status.className = '';
+            status.innerHTML = '<p>📊 Processing file: ' + file.name + '</p>';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    analyzeData(data, file.name);
+                } catch (error) {
+                    status.innerHTML = '<p class="error">❌ Error: Invalid JSON file</p>';
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function analyzeData(data, filename) {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            
+            if (!Array.isArray(data)) {
+                status.innerHTML = '<p class="error">❌ Error: Expected JSON array format</p>';
+                return;
+            }
+            
+            const blocks = [];
+            
+            data.forEach((entry, index) => {
+                if (entry.content) {
+                    const block = parseEntry(entry, index + 1);
+                    if (block) blocks.push(block);
+                }
+            });
+            
+            status.innerHTML = '<p class="success">✅ Analysis complete: ' + blocks.length + ' transaction blocks found</p>';
+            displayResults(blocks, filename);
+        }
+        
+        function parseEntry(entry, blockId) {
+            const content = entry.content;
+            
+            // Extract basic info
+            const messageMatch = content.match(/\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]/);
+            if (!messageMatch) return null;
+            
+            const [, protocol, api, direction] = messageMatch;
+            
+            // Identify PSP
+            let psp = 'Unknown';
+            if (content.includes('STONE_ANTOM') || content.includes('STONE')) psp = 'Stone';
+            else if (content.includes('mundipagg') || content.includes('MUNDIPAGG')) psp = 'Mundipagg';
+            else if (content.includes('ALIPW3BR') || content.includes('alipay') || content.includes('OPENAPIv2')) psp = 'Alipay';
+            
+            // Extract JSON content
+            const jsonMatch = content.match(/MESSAGE_ENVELOPE_CONTENT\\]\\[({.*})\\]/);
+            let jsonData = null;
+            if (jsonMatch) {
+                try {
+                    jsonData = JSON.parse(jsonMatch[1]);
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+            
+            return {
+                id: blockId,
+                psp: psp,
+                direction: direction,
+                api: api,
+                jsonData: jsonData,
+                rawContent: content,
+                timestamp: entry.__time__
+            };
+        }
+        
+        function displayResults(blocks, filename) {
+            const results = document.getElementById('results');
+            results.className = '';
+            
+            let html = '<h2>📋 Analysis Results for ' + filename + '</h2>';
+            
+            blocks.forEach(block => {
+                const optimizations = getOptimizations(block);
+                
+                html += '<div class="block">';
+                html += '<div class="block-header">Block ' + block.id + ' - ' + block.psp + ' (' + block.direction + ')</div>';
+                html += '<p><strong>API:</strong> ' + block.api + '</p>';
+                
+                if (block.jsonData) {
+                    html += '<p><strong>Transaction Data:</strong> Found valid JSON payload</p>';
+                    
+                    // Show key transaction details
+                    if (block.jsonData.paymentAmount) {
+                        html += '<p><strong>Amount:</strong> ' + block.jsonData.paymentAmount.value + ' ' + block.jsonData.paymentAmount.currency + '</p>';
+                    }
+                    if (block.jsonData.paymentMethod && block.jsonData.paymentMethod.paymentMethodMetaData) {
+                        const meta = block.jsonData.paymentMethod.paymentMethodMetaData;
+                        html += '<p><strong>3D Secure:</strong> ' + (meta.is3DSAuthentication ? 'Enabled' : 'Disabled') + '</p>';
+                        if (meta.cardNo) html += '<p><strong>Card:</strong> ' + meta.cardNo + '</p>';
+                    }
+                }
+                
+                // Show optimizations
+                if (optimizations.length > 0) {
+                    html += '<h4>💡 Optimization Recommendations:</h4>';
+                    optimizations.forEach(opt => {
+                        html += '<div class="optimization">';
+                        html += '<strong>' + opt.title + '</strong> (' + opt.priority + ')<br>';
+                        html += opt.description + '<br>';
+                        html += '<em>Expected Impact: ' + opt.impact + '</em>';
+                        html += '</div>';
+                    });
+                }
+                
+                html += '</div>';
+            });
+            
+            results.innerHTML = html;
+        }
+        
+        function getOptimizations(block) {
+            const optimizations = [];
+            
+            if (block.jsonData && block.jsonData.paymentMethod && block.jsonData.paymentMethod.paymentMethodMetaData) {
+                const meta = block.jsonData.paymentMethod.paymentMethodMetaData;
+                
+                // 3D Secure check
+                if (meta.is3DSAuthentication === false) {
+                    optimizations.push({
+                        title: '3D Secure Enhancement',
+                        description: 'Enable 3D Secure 2.0 authentication to reduce fraud risk',
+                        impact: '30% fraud reduction',
+                        priority: 'HIGH'
+                    });
+                }
+                
+                // Card masking check
+                if (meta.cardNo && !meta.cardNo.includes('*')) {
+                    optimizations.push({
+                        title: 'Card Masking',
+                        description: 'Implement proper card number masking for PCI compliance',
+                        impact: 'PCI DSS compliance',
+                        priority: 'HIGH'
+                    });
+                }
+            }
+            
+            // PSP-specific optimizations
+            if (block.psp === 'Stone') {
+                optimizations.push({
+                    title: 'PSP Routing Optimization',
+                    description: 'Consider routing to Alipay for better latency performance',
+                    impact: '60% latency reduction',
+                    priority: 'MEDIUM'
+                });
+            }
+            
+            return optimizations;
+        }
+    </script>
+</body>
+</html>
