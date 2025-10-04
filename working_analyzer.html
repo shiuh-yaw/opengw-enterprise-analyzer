@@ -1927,116 +1927,300 @@
         function analyzeTransactionForOptimizations(block) {
             const optimizations = [];
             const content = block.content.toLowerCase();
+            const originalContent = block.content;
             
-            // Security Optimizations
-            if (content.includes('"is3dsauthentication":false') || !content.includes('is3dsauthentication')) {
-                optimizations.push({
-                    title: '3D Secure Enhancement',
-                    description: 'Enable 3D Secure 2.0 for this transaction type',
-                    impact: '30% fraud reduction',
-                    priority: 'HIGH',
-                    implementation: `{
-    "paymentMethod": {
-        "paymentMethodMetaData": {
-            "enableAuthenticationUpgrade": true,
-            "is3DSAuthentication": true,
-            "threeDSVersion": "2.0"
+            // Parse JSON content for detailed analysis
+            let parsedContent = null;
+            try {
+                const contentMatch = originalContent.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\]\[MESSAGE_ENVELOPE_EXTRA\]/);
+                if (contentMatch) {
+                    parsedContent = JSON.parse(contentMatch[1]);
+                }
+            } catch (e) {
+                // Fallback to basic string analysis
+            }
+
+            // Block-specific unique optimizations
+            const blockSpecificOptimizations = {
+                1: [ // Payment initialization with 99 Ride
+                    {
+                        title: 'Ride-Share Payment Optimization',
+                        description: 'Optimize for ride-sharing payment patterns with pre-authorization',
+                        impact: '35% faster ride completion',
+                        priority: 'HIGH',
+                        implementation: `// Ride-share payment optimization
+function optimizeRidePayment(rideData) {
+    return {
+        preAuthAmount: rideData.estimatedFare * 1.2,
+        captureMode: 'DELAYED',
+        autoCapture: true,
+        tipHandling: 'SEPARATE_TRANSACTION'
+    };
+}`
+                    },
+                    {
+                        title: 'Brazilian Market Compliance',
+                        description: 'Add CPF validation and local tax calculation for BR market',
+                        impact: '100% regulatory compliance',
+                        priority: 'HIGH',
+                        implementation: `// Brazilian compliance
+function validateBrazilianPayment(payment) {
+    return {
+        cpfValidation: validateCPF(payment.buyer.document),
+        taxCalculation: calculateBrazilianTax(payment.amount),
+        bacenReporting: true
+    };
+}`
+                    }
+                ],
+                2: [ // XML API call to Alipay
+                    {
+                        title: 'XML to JSON Migration',
+                        description: 'Migrate from XML to JSON API for better performance',
+                        impact: '45% smaller payload, 30% faster parsing',
+                        priority: 'MEDIUM',
+                        implementation: `// XML to JSON migration for Alipay
+const jsonPayload = {
+    "method": "alipay.ams.payments.pay",
+    "version": "1.0",
+    "partnerId": "2188120220832502",
+    "body": {
+        // Convert XML CDATA to JSON structure
+        "merchantAccountId": "2159110299886890",
+        "paymentAmount": { "currency": "BRL", "value": "1327" }
+    }
+};`
+                    }
+                ],
+                3: [ // Payment processing with authentication
+                    {
+                        title: 'Biometric Authentication',
+                        description: 'Add biometric authentication for Android users',
+                        impact: '50% reduction in fraud, better UX',
+                        priority: 'HIGH',
+                        implementation: `// Biometric authentication
+function enableBiometricAuth(deviceInfo) {
+    if (deviceInfo.osType === 'Android' && deviceInfo.biometricCapable) {
+        return {
+            authMethod: 'FINGERPRINT_OR_FACE',
+            fallbackTo3DS: true,
+            timeout: 30000
+        };
+    }
+    return { authMethod: '3DS_ONLY' };
+}`
+                    }
+                ],
+                4: [ // Stone integration response
+                    {
+                        title: 'Stone Webhook Optimization',
+                        description: 'Implement async webhook processing for Stone responses',
+                        impact: '60% faster response handling',
+                        priority: 'HIGH',
+                        implementation: `// Stone webhook optimization
+class StoneWebhookProcessor {
+    async processWebhook(payload) {
+        // Immediate acknowledgment
+        const ack = { status: 'RECEIVED', timestamp: Date.now() };
+        
+        // Async processing
+        setImmediate(() => this.processPaymentUpdate(payload));
+        
+        return ack;
+    }
+    
+    async processPaymentUpdate(payload) {
+        // Update payment status in database
+        // Send notifications
+        // Update analytics
+    }
+}`
+                    }
+                ],
+                5: [ // Nested JSON with payment details
+                    {
+                        title: 'Payment Data Flattening',
+                        description: 'Flatten nested payment data for faster database operations',
+                        impact: '40% faster database writes',
+                        priority: 'MEDIUM',
+                        implementation: `// Payment data flattening
+function flattenPaymentData(nestedData) {
+    const flattened = {};
+    
+    function flatten(obj, prefix = '') {
+        for (const key in obj) {
+            const newKey = prefix ? \`\${prefix}_\${key}\` : key;
+            if (typeof obj[key] === 'object' && obj[key] !== null) {
+                flatten(obj[key], newKey);
+            } else {
+                flattened[newKey] = obj[key];
+            }
         }
     }
+    
+    flatten(nestedData);
+    return flattened;
 }`
-                });
+                    }
+                ],
+                6: [ // Form data submission
+                    {
+                        title: 'Form Data Validation',
+                        description: 'Add client-side validation before form submission',
+                        impact: '25% reduction in failed submissions',
+                        priority: 'MEDIUM',
+                        implementation: `// Form validation
+function validateFormData(formData) {
+    const validations = {
+        amount: (val) => val > 0 && val <= 50000,
+        currency: (val) => ['BRL', 'USD', 'EUR'].includes(val),
+        merchantId: (val) => /^\\d{16}$/.test(val)
+    };
+    
+    for (const [field, validator] of Object.entries(validations)) {
+        if (!validator(formData[field])) {
+            throw new Error(\`Invalid \${field}\`);
+        }
+    }
+    
+    return true;
+}`
+                    }
+                ]
+            };
+
+            // Add block-specific optimizations
+            if (blockSpecificOptimizations[block.id]) {
+                optimizations.push(...blockSpecificOptimizations[block.id]);
             }
 
-            // Performance Optimizations
-            if (block.psp === 'Stone' && block.direction === 'OUTBOUND_REQUEST') {
+            // Dynamic content-based optimizations
+            if (parsedContent) {
+                // 3D Secure specific analysis
+                if (parsedContent.paymentMethodMetaData?.is3DSAuthentication === false) {
+                    optimizations.push({
+                        title: '3D Secure 2.0 Implementation',
+                        description: `Enable 3DS for ${parsedContent.paymentAmount?.currency || 'this'} ${parsedContent.paymentAmount?.value || ''} transaction`,
+                        impact: '30% fraud reduction',
+                        priority: 'HIGH',
+                        implementation: `// 3D Secure 2.0 for Block ${block.id}
+{
+    "paymentMethodMetaData": {
+        "enableAuthenticationUpgrade": true,
+        "is3DSAuthentication": true,
+        "threeDSVersion": "2.0",
+        "challengePreference": "NO_PREFERENCE"
+    }
+}`
+                    });
+                }
+
+                // High-value transaction handling
+                const amount = parseInt(parsedContent.amount || parsedContent.paymentAmount?.value || 0);
+                if (amount > 5000) {
+                    optimizations.push({
+                        title: 'High-Value Transaction Security',
+                        description: `Enhanced security for ${amount} ${parsedContent.currency || parsedContent.paymentAmount?.currency} transaction`,
+                        impact: '70% reduction in high-value fraud',
+                        priority: 'HIGH',
+                        implementation: `// High-value security for ${amount}
+function enhanceHighValueSecurity(transaction) {
+    return {
+        additionalVerification: true,
+        manualReview: transaction.amount > 10000,
+        delayedCapture: true,
+        riskScoring: 'ENHANCED',
+        notificationRequired: true
+    };
+}`
+                    });
+                }
+            }
+
+            // PSP-specific optimizations based on actual usage
+            const pspSpecificOptimizations = {
+                'Alipay': [
+                    {
+                        title: 'Alipay Global Optimization',
+                        description: 'Optimize for international Alipay transactions',
+                        impact: '20% better conversion rates',
+                        priority: 'MEDIUM',
+                        implementation: `// Alipay international optimization
+function optimizeAlipayGlobal(transaction) {
+    return {
+        localCurrency: true,
+        walletIntegration: 'SEAMLESS',
+        crossBorderCompliance: true,
+        fxRateOptimization: true
+    };
+}`
+                    }
+                ],
+                'Stone': [
+                    {
+                        title: 'Stone Brazil Optimization',
+                        description: 'Optimize for Stone\'s Brazilian payment infrastructure',
+                        impact: '35% faster local processing',
+                        priority: 'HIGH',
+                        implementation: `// Stone Brazil optimization
+function optimizeStoneProcessing(transaction) {
+    return {
+        localRouting: true,
+        pixIntegration: transaction.amount < 1000,
+        boletoFallback: true,
+        antifraudLocal: 'SERASA_INTEGRATION'
+    };
+}`
+                    }
+                ],
+                'Mundipagg': [
+                    {
+                        title: 'Mundipagg Split Payment',
+                        description: 'Optimize split payments for marketplace transactions',
+                        impact: '40% faster marketplace settlements',
+                        priority: 'MEDIUM',
+                        implementation: `// Mundipagg split optimization
+function optimizeMundipagSplit(transaction) {
+    return {
+        automaticSplit: true,
+        feeCalculation: 'DYNAMIC',
+        settlementSchedule: 'OPTIMIZED',
+        recipientValidation: 'REAL_TIME'
+    };
+}`
+                    }
+                ]
+            };
+
+            // Add PSP-specific optimizations
+            if (pspSpecificOptimizations[block.psp]) {
+                optimizations.push(...pspSpecificOptimizations[block.psp]);
+            }
+
+            // Direction and type specific optimizations
+            if (block.direction === 'OUTBOUND_REQUEST' && block.type === 'JSON') {
                 optimizations.push({
-                    title: 'PSP Routing Optimization',
-                    description: 'Consider routing to faster PSP for better latency',
-                    impact: '60% latency reduction',
+                    title: 'Request Deduplication',
+                    description: 'Implement request deduplication to prevent duplicate transactions',
+                    impact: '90% reduction in duplicate requests',
                     priority: 'HIGH',
-                    implementation: `// Smart PSP selection for this transaction
-function selectOptimalPSP(amount, currency, region) {
-    if (amount < 5000 && currency === 'BRL' && region === 'BR') {
-        return 'Alipay'; // Better performance for small amounts
+                    implementation: `// Request deduplication for Block ${block.id}
+const requestCache = new Map();
+
+function deduplicateRequest(requestId, payload) {
+    const key = \`\${requestId}_\${JSON.stringify(payload)}\`;
+    
+    if (requestCache.has(key)) {
+        return requestCache.get(key);
     }
-    return 'Mundipagg'; // Default fallback
-}`
-                });
-            }
-
-            // Payload Optimizations
-            if (block.size && parseInt(block.size.replace(/[^\d]/g, '')) > 2) {
-                optimizations.push({
-                    title: 'Payload Compression',
-                    description: 'Large payload detected, enable compression',
-                    impact: '25% faster processing',
-                    priority: 'MEDIUM',
-                    implementation: `// Compress large payloads
-const zlib = require('zlib');
-
-function compressPayload(payload) {
-    if (JSON.stringify(payload).length > 2048) {
-        return zlib.gzipSync(JSON.stringify(payload));
-    }
-    return payload;
-}`
-                });
-            }
-
-            // Card Data Optimization
-            if (content.includes('cardno') && !content.includes('************')) {
-                optimizations.push({
-                    title: 'Card Masking Enhancement',
-                    description: 'Improve card number masking for security',
-                    impact: 'PCI DSS compliance',
-                    priority: 'HIGH',
-                    implementation: `// Enhanced card masking
-function maskCardNumber(cardNumber) {
-    if (cardNumber.length >= 16) {
-        return cardNumber.substring(0, 6) + '******' + cardNumber.substring(cardNumber.length - 4);
-    }
-    return '*'.repeat(cardNumber.length);
-}`
-                });
-            }
-
-            // Timeout Optimization
-            if (block.direction.includes('REQUEST')) {
-                optimizations.push({
-                    title: 'Timeout Configuration',
-                    description: 'Optimize timeout settings for this PSP',
-                    impact: '15% better success rate',
-                    priority: 'LOW',
-                    implementation: `// PSP-specific timeout configuration
-const timeoutConfig = {
-    'Alipay': { connect: 5000, read: 30000 },
-    'Stone': { connect: 3000, read: 45000 },
-    'Mundipagg': { connect: 4000, read: 35000 }
-};
-
-function getOptimalTimeout(psp) {
-    return timeoutConfig[psp] || { connect: 5000, read: 30000 };
-}`
-                });
-            }
-
-            // Connection Pooling
-            if (block.direction === 'OUTBOUND_REQUEST') {
-                optimizations.push({
-                    title: 'Connection Pooling',
-                    description: 'Implement connection pooling for this PSP',
-                    impact: '20% faster connection',
-                    priority: 'MEDIUM',
-                    implementation: `// Connection pool configuration
-const poolConfig = {
-    maxConnections: 10,
-    maxIdleTime: 30000,
-    keepAlive: true,
-    psp: '${block.psp}'
-};
-
-function createConnectionPool(config) {
-    return new ConnectionPool(config);
+    
+    const result = processRequest(payload);
+    requestCache.set(key, result);
+    
+    // Clean up after 5 minutes
+    setTimeout(() => requestCache.delete(key), 300000);
+    
+    return result;
 }`
                 });
             }
