@@ -1326,38 +1326,11 @@
         function formatContent(content, type) {
             try {
                 if (type === 'JSON') {
-                    const parsed = JSON.parse(content);
-                    
                     // Check for nested JSON strings and format them too
-                    function formatNestedJson(obj) {
-                        if (typeof obj === 'string') {
-                            // Try to parse as JSON if it looks like JSON
-                            if ((obj.startsWith('{') && obj.endsWith('}')) || 
-                                (obj.startsWith('[') && obj.endsWith(']'))) {
-                                try {
-                                    const nestedParsed = JSON.parse(obj);
-                                    return formatNestedJson(nestedParsed); // Recursively format
-                                } catch (e) {
-                                    return obj; // Return original if not valid JSON
-                                }
-                            }
-                            return obj;
-                        } else if (Array.isArray(obj)) {
-                            return obj.map(formatNestedJson);
-                        } else if (obj !== null && typeof obj === 'object') {
-                            const formatted = {};
-                            for (const [key, value] of Object.entries(obj)) {
-                                formatted[key] = formatNestedJson(value);
-                            }
-                            return formatted;
-                        }
-                        return obj;
-                    }
-                    
-                    const formattedWithNested = formatNestedJson(parsed);
-                    return JSON.stringify(formattedWithNested, null, 2);
+                    const parsed = JSON.parse(content);
+                    return formatNestedJsonContent(parsed);
                 } else if (type === 'XML') {
-                    // Check if this is mixed XML/JSON content (like Block #2)
+                    // Check if this is mixed XML/JSON content (like Blocks #2 and #9)
                     if (content.includes('<![CDATA[{') && content.includes('}]]>')) {
                         return formatMixedXmlJsonContent(content);
                     }
@@ -1402,6 +1375,37 @@
             } catch (error) {
                 return content;
             }
+        }
+
+        function formatNestedJsonContent(obj) {
+            // Enhanced nested JSON formatting for Blocks #3, #5, #8, #12, #16
+            function formatNestedJson(obj) {
+                if (typeof obj === 'string') {
+                    // Try to parse as JSON if it looks like JSON
+                    if ((obj.startsWith('{') && obj.endsWith('}')) || 
+                        (obj.startsWith('[') && obj.endsWith(']'))) {
+                        try {
+                            const nestedParsed = JSON.parse(obj);
+                            return formatNestedJson(nestedParsed); // Recursively format
+                        } catch (e) {
+                            return obj; // Return original if not valid JSON
+                        }
+                    }
+                    return obj;
+                } else if (Array.isArray(obj)) {
+                    return obj.map(formatNestedJson);
+                } else if (obj !== null && typeof obj === 'object') {
+                    const formatted = {};
+                    for (const [key, value] of Object.entries(obj)) {
+                        formatted[key] = formatNestedJson(value);
+                    }
+                    return formatted;
+                }
+                return obj;
+            }
+            
+            const formattedWithNested = formatNestedJson(obj);
+            return JSON.stringify(formattedWithNested, null, 2);
         }
 
         function formatMixedXmlJsonContent(content) {
