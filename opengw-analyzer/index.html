@@ -7,41 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
+        .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .sidebar {
-            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
-            min-height: 100vh;
         }
         .card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .nav-item {
+        .upload-area {
+            border: 2px dashed #cbd5e0;
             transition: all 0.3s ease;
         }
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(5px);
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
         }
-        .nav-item.active {
-            background: rgba(59, 130, 246, 0.3);
-            border-left: 4px solid #3b82f6;
-        }
-        .loading-spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .upload-area.drag-over {
+            border-color: #3182ce;
+            background-color: #ebf8ff;
         }
         .fade-in {
             animation: fadeIn 0.5s ease-in;
@@ -50,336 +34,48 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .upload-area {
-            border: 2px dashed #cbd5e0;
+        .step-card {
             transition: all 0.3s ease;
         }
-        .upload-area:hover {
-            border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.05);
-        }
-        .upload-area.dragover {
-            border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-        .block-card {
-            transition: all 0.3s ease;
-            border-left: 4px solid transparent;
-        }
-        .block-card:hover {
+        .step-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        .block-card.json {
-            border-left-color: #10b981;
-        }
-        .block-card.xml {
-            border-left-color: #f59e0b;
-        }
-        .block-card.form {
-            border-left-color: #3b82f6;
-        }
-        .content-preview {
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Fira Code', 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-        .modal-overlay {
-            backdrop-filter: blur(5px);
-        }
-        .syntax-highlight {
-            font-family: 'Fira Code', 'Courier New', monospace;
-            line-height: 1.5;
-        }
-        .syntax-highlight .json-key {
-            color: #0066cc;
-            font-weight: bold;
-        }
-        .syntax-highlight .json-string {
-            color: #009900;
-        }
-        .syntax-highlight .json-number {
-            color: #cc6600;
-        }
-        .syntax-highlight .json-boolean {
-            color: #cc0066;
-        }
-        .syntax-highlight .json-null {
-            color: #999999;
-        }
-        .syntax-highlight .xml-tag {
-            color: #0066cc;
-            font-weight: bold;
-        }
-        .syntax-highlight .xml-attr {
-            color: #cc6600;
-        }
-        .syntax-highlight .xml-value {
-            color: #009900;
-        }
-        .syntax-highlight .xml-declaration {
-            color: #666666;
-            font-style: italic;
-        }
-        .syntax-highlight .xml-cdata {
-            color: #cc0066;
-            background-color: #f5f5f5;
-        }
-        .content-tabs {
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .content-tab {
-            padding: 8px 16px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        .content-tab.active {
-            border-bottom-color: #3b82f6;
-            color: #3b82f6;
-            font-weight: 600;
-        }
-        .content-tab:hover {
-            background-color: #f8fafc;
-        }
-        .copy-button {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: #3b82f6;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .copy-button:hover {
-            background: rgba(59, 130, 246, 0.2);
-        }
-        .search-highlight {
-            background-color: #fef3c7;
-            padding: 1px 2px;
-            border-radius: 2px;
-        }
-        .flow-diagram {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        .flow-step {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 0 8px;
-            text-align: center;
-            min-width: 120px;
-            transition: all 0.3s ease;
-        }
-        .flow-step.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
-        }
-        .flow-arrow {
-            color: #6b7280;
-            font-size: 18px;
-        }
-        .metric-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .metric-card:hover {
-            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
     </style>
 </head>
-<body>
-    <div class="flex">
-        <!-- Sidebar -->
-        <div class="sidebar w-64 p-6">
-            <div class="text-white mb-8">
-                <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
-                <p class="text-sm text-gray-300">PSP Analyzer v2.0</p>
-            </div>
-            
-            <nav class="space-y-2">
-                <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center px-4 py-3 text-white rounded-lg active">
-                    <i class="fas fa-chart-line mr-3"></i>
-                    <span>Dashboard</span>
-                    <span class="ml-auto bg-green-500 text-xs px-2 py-1 rounded-full">1</span>
-                </a>
-                <a href="#" onclick="showSection('upload')" class="nav-item flex items-center px-4 py-3 text-white rounded-lg">
-                    <i class="fas fa-upload mr-3"></i>
-                    <span>Upload & Analyze</span>
-                    <span class="ml-auto bg-blue-500 text-xs px-2 py-1 rounded-full">2</span>
-                </a>
-                <a href="#" onclick="showSection('optimization')" class="nav-item flex items-center px-4 py-3 text-white rounded-lg">
-                    <i class="fas fa-rocket mr-3"></i>
-                    <span>Optimization</span>
-                    <span class="ml-auto bg-purple-500 text-xs px-2 py-1 rounded-full">3</span>
-                </a>
-                <a href="#" onclick="showSection('monitoring')" class="nav-item flex items-center px-4 py-3 text-white rounded-lg">
-                    <i class="fas fa-desktop mr-3"></i>
-                    <span>Monitoring</span>
-                    <span class="ml-auto bg-teal-500 text-xs px-2 py-1 rounded-full">4</span>
-                </a>
-                <a href="#" onclick="showSection('settings')" class="nav-item flex items-center px-4 py-3 text-white rounded-lg">
-                    <i class="fas fa-cog mr-3"></i>
-                    <span>Settings</span>
-                    <span class="ml-auto bg-pink-500 text-xs px-2 py-1 rounded-full">5</span>
-                </a>
-            </nav>
-            
-            <div class="mt-auto pt-8">
-                <div class="flex items-center text-green-400 text-sm">
-                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                    System Online
+<body class="bg-gray-100">
+    <div class="min-h-screen gradient-bg">
+        <div class="flex">
+            <!-- Sidebar -->
+            <div class="w-64 bg-gray-800 text-white min-h-screen">
+                <div class="p-6">
+                    <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
+                    <p class="text-gray-400 text-sm">PSP Analyzer v2.0</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex-1 p-8">
-            <!-- Dashboard Section -->
-            <div id="dashboard" class="section">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-white mb-2">Dashboard</h2>
-                    <p class="text-blue-100">Overview of your OpenGW transaction analysis system</p>
-                </div>
-
-                <!-- Key Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="card p-6 rounded-xl">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-medium text-gray-600">Total Transactions</h3>
-                            <i class="fas fa-exchange-alt text-blue-500"></i>
-                        </div>
-                        <div class="text-2xl font-bold text-gray-900">12,847</div>
-                        <div class="text-sm text-green-600">+12% from last month</div>
-                    </div>
-                    
-                    <div class="card p-6 rounded-xl">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-medium text-gray-600">Success Rate</h3>
-                            <i class="fas fa-check-circle text-green-500"></i>
-                        </div>
-                        <div class="text-2xl font-bold text-gray-900">98.7%</div>
-                        <div class="text-sm text-green-600">+0.3% improvement</div>
-                    </div>
-                    
-                    <div class="card p-6 rounded-xl">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-medium text-gray-600">Avg Response Time</h3>
-                            <i class="fas fa-clock text-yellow-500"></i>
-                        </div>
-                        <div class="text-2xl font-bold text-gray-900">247ms</div>
-                        <div class="text-sm text-green-600">-15ms faster</div>
-                    </div>
-                    
-                    <div class="card p-6 rounded-xl">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-medium text-gray-600">Risk Score</h3>
-                            <i class="fas fa-shield-alt text-red-500"></i>
-                        </div>
-                        <div class="text-2xl font-bold text-gray-900">2.3%</div>
-                        <div class="text-sm text-green-600">Low risk level</div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="card p-6 rounded-xl">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div class="flex items-center">
-                                    <i class="fas fa-credit-card text-blue-500 mr-3"></i>
-                                    <div>
-                                        <div class="font-medium">Payment #12847</div>
-                                        <div class="text-sm text-gray-600">Mundipagg • $1,327 BRL</div>
-                                    </div>
-                                </div>
-                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Success</span>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div class="flex items-center">
-                                    <i class="fas fa-mobile-alt text-green-500 mr-3"></i>
-                                    <div>
-                                        <div class="font-medium">Payment #12846</div>
-                                        <div class="text-sm text-gray-600">Alipay • $50.00 USD</div>
-                                    </div>
-                                </div>
-                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Success</span>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div class="flex items-center">
-                                    <i class="fas fa-car text-yellow-500 mr-3"></i>
-                                    <div>
-                                        <div class="font-medium">Payment #12845</div>
-                                        <div class="text-sm text-gray-600">99 Ride • $25.50 BRL</div>
-                                    </div>
-                                </div>
-                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Pending</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card p-6 rounded-xl">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">PSP Distribution</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                                    <span>Mundipagg</span>
-                                </div>
-                                <span class="font-medium">45%</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                                    <span>Alipay</span>
-                                </div>
-                                <span class="font-medium">30%</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-                                    <span>99 Ride</span>
-                                </div>
-                                <span class="font-medium">15%</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
-                                    <span>Stone</span>
-                                </div>
-                                <span class="font-medium">10%</span>
-                            </div>
-                        </div>
+                
+                <nav class="mt-8">
+                    <a href="#" onclick="showSection('upload')" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 bg-gray-700 text-white">
+                        <i class="fas fa-upload mr-3"></i>
+                        Upload & Analyze
+                        <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full">1</span>
+                    </a>
+                </nav>
+                
+                <div class="absolute bottom-4 left-4">
+                    <div class="flex items-center text-green-400 text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                        System Online
                     </div>
                 </div>
             </div>
 
-            <!-- Upload & Analyze Section -->
-            <div id="upload" class="section hidden">
-                <div class="mb-8">
+            <!-- Main Content -->
+            <div class="flex-1 p-8">
+                <!-- Upload & Analyze Section -->
+                <div id="uploadSection" class="section">
                     <h2 class="text-3xl font-bold text-white mb-2">Upload & Analyze</h2>
-                    <p class="text-blue-100">Upload transaction log files for comprehensive automated analysis</p>
-                </div>
-
-                <!-- Upload Area -->
-                <div class="card p-8 rounded-xl mb-6">
+                    <p class="text-gray-200 mb-8">Upload transaction log files for comprehensive automated analysis</p>
+                    
                     <div class="text-center">
                         <div class="upload-area p-8 rounded-lg mb-6" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                             <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
@@ -396,325 +92,75 @@
                 <!-- Processing Status -->
                 <div id="processingStatus" class="hidden card p-6 rounded-xl mb-6">
                     <div class="text-center">
-                        <div class="flex items-center justify-center mb-4">
-                            <div class="loading-spinner mr-3"></div>
-                            <span class="text-lg font-medium">Processing transaction log file...</span>
-                        </div>
-                        <div id="fileInfo" class="bg-blue-50 p-4 rounded-lg">
-                            <!-- File info will be populated here -->
-                        </div>
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing transaction log file...</h3>
+                        <div id="fileInfo" class="text-gray-600"></div>
                     </div>
                 </div>
 
-                <!-- Content Blocks Display -->
-                <div id="contentBlocks" class="hidden">
+                <!-- Transaction Steps Analysis -->
+                <div id="stepsAnalysis" class="hidden">
                     <div class="card p-6 rounded-xl mb-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xl font-bold text-gray-900">
-                                <i class="fas fa-list-alt text-blue-600 mr-2"></i>
-                                Content Blocks
-                            </h3>
-                            <div class="flex items-center space-x-4">
-                                <span id="blockCount" class="text-sm text-gray-600">0 blocks found</span>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs text-gray-500">Filter:</span>
-                                    <select id="typeFilter" onchange="filterBlocks()" class="text-xs border rounded px-2 py-1">
-                                        <option value="all">All Types</option>
-                                        <option value="json">JSON</option>
-                                        <option value="xml">XML</option>
-                                        <option value="form">FORM</option>
-                                    </select>
-                                    <select id="pspFilter" onchange="filterBlocks()" class="text-xs border rounded px-2 py-1">
-                                        <option value="all">All PSPs</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="blocksContainer" class="space-y-4">
-                            <!-- Blocks will be populated here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Analysis Status -->
-                <div id="analysisStatus" class="hidden card p-6 rounded-xl mb-6">
-                    <div class="text-center mb-6">
-                        <h3 class="text-xl font-semibold text-gray-900 mb-4">
-                            <i class="fas fa-sync-alt text-blue-600 mr-2 animate-spin"></i>
-                            Running Automated Analysis
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">
+                            <i class="fas fa-list-ol mr-2"></i>
+                            Transaction Steps Analysis
                         </h3>
-                        <p class="text-gray-600 mb-6">All three analysis engines are processing your transaction data simultaneously</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div id="pspAnalysisStatus" class="bg-blue-50 p-4 rounded-lg">
-                            <div class="flex items-center mb-2">
-                                <div class="loading-spinner mr-3" style="width: 16px; height: 16px;"></div>
-                                <h4 class="font-medium text-blue-900">PSP API Analysis</h4>
-                            </div>
-                            <p class="text-sm text-blue-700">Analyzing payment provider APIs...</p>
-                        </div>
-                        <div id="multiAgentStatus" class="bg-purple-50 p-4 rounded-lg">
-                            <div class="flex items-center mb-2">
-                                <div class="loading-spinner mr-3" style="width: 16px; height: 16px;"></div>
-                                <h4 class="font-medium text-purple-900">Multi-Agent Analysis</h4>
-                            </div>
-                            <p class="text-sm text-purple-700">AI agents analyzing risk, compliance, fraud...</p>
-                        </div>
-                        <div id="flowAnalysisStatus" class="bg-green-50 p-4 rounded-lg">
-                            <div class="flex items-center mb-2">
-                                <div class="loading-spinner mr-3" style="width: 16px; height: 16px;"></div>
-                                <h4 class="font-medium text-green-900">Transaction Flow Analysis</h4>
-                            </div>
-                            <p class="text-sm text-green-700">Analyzing multi-PSP success strategy...</p>
-                        </div>
+                        <div id="stepsContainer"></div>
                     </div>
                 </div>
 
-                <!-- Detailed Results -->
-                <div id="detailedResults" class="hidden space-y-6">
-                    <div class="card p-6 rounded-xl">
-                        <div class="text-center mb-6">
-                            <h3 class="text-2xl font-semibold text-gray-900 mb-2">
-                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                                Analysis Complete!
+                <!-- Analysis Results -->
+                <div id="analysisResults" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- PSP API Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-code mr-2"></i>
+                                PSP API Analysis
                             </h3>
-                            <p class="text-gray-600">Your transaction log has been thoroughly analyzed by all three engines</p>
+                            <div id="pspAnalysisResults"></div>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-blue-50 p-6 rounded-lg text-center">
-                                <i class="fas fa-chart-bar text-blue-600 text-2xl mb-3"></i>
-                                <h4 class="font-semibold text-blue-900 mb-2">PSP API Analysis</h4>
-                                <div id="pspSummary" class="text-sm text-blue-700">
-                                    <!-- Will be populated -->
-                                </div>
-                            </div>
-                            <div class="bg-purple-50 p-6 rounded-lg text-center">
-                                <i class="fas fa-brain text-purple-600 text-2xl mb-3"></i>
-                                <h4 class="font-semibold text-purple-900 mb-2">Multi-Agent AI Analysis</h4>
-                                <div id="aiSummary" class="text-sm text-purple-700">
-                                    <!-- Will be populated -->
-                                </div>
-                            </div>
-                            <div class="bg-green-50 p-6 rounded-lg text-center">
-                                <i class="fas fa-route text-green-600 text-2xl mb-3"></i>
-                                <h4 class="font-semibold text-green-900 mb-2">Transaction Flow Analysis</h4>
-                                <div id="flowSummary" class="text-sm text-green-700">
-                                    <!-- Will be populated -->
-                                </div>
-                            </div>
+
+                        <!-- Multi-Agent AI Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-robot mr-2"></i>
+                                Multi-Agent AI Analysis
+                            </h3>
+                            <div id="aiAnalysisResults"></div>
+                        </div>
+
+                        <!-- Transaction Flow Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                Transaction Flow Analysis
+                            </h3>
+                            <div id="flowAnalysisResults"></div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Optimization Section -->
-            <div id="optimization" class="section hidden">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-white mb-2">
-                        <i class="fas fa-rocket mr-3"></i>
-                        Optimization Opportunities
-                    </h2>
-                    <p class="text-blue-100">AI-powered recommendations to improve performance, security, and cost efficiency</p>
-                </div>
-
-                <!-- Optimization Overview -->
-                <div id="optimizationOverview" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="card p-6 rounded-xl text-center">
-                        <div class="relative w-20 h-20 mx-auto mb-4">
-                            <svg class="w-20 h-20 transform -rotate-90">
-                                <circle cx="40" cy="40" r="30" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
-                                <circle id="performanceCircle" cx="40" cy="40" r="30" stroke="#3b82f6" stroke-width="4" fill="transparent" 
-                                        stroke-dasharray="113 188" stroke-linecap="round"/>
-                            </svg>
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <span id="performanceScore" class="text-2xl font-bold text-blue-600">85%</span>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-800">Performance Score</h3>
-                        <p class="text-sm text-gray-600">+12% from baseline</p>
-                    </div>
-
-                    <div class="card p-6 rounded-xl text-center">
-                        <div class="relative w-20 h-20 mx-auto mb-4">
-                            <svg class="w-20 h-20 transform -rotate-90">
-                                <circle cx="40" cy="40" r="30" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
-                                <circle id="securityCircle" cx="40" cy="40" r="30" stroke="#10b981" stroke-width="4" fill="transparent" 
-                                        stroke-dasharray="169 188" stroke-linecap="round"/>
-                            </svg>
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <span id="securityScore" class="text-2xl font-bold text-green-600">92%</span>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-800">Security Score</h3>
-                        <p class="text-sm text-gray-600">+8% improvement</p>
-                    </div>
-
-                    <div class="card p-6 rounded-xl text-center">
-                        <div class="text-center">
-                            <div id="monthlySavings" class="text-3xl font-bold text-purple-600 mb-2">$2,847</div>
-                            <h3 class="text-lg font-semibold text-gray-800">Monthly Savings</h3>
-                            <p class="text-sm text-gray-600">18% cost reduction</p>
-                        </div>
-                    </div>
-
-                    <div class="card p-6 rounded-xl text-center">
-                        <div class="text-center">
-                            <div id="avgLatency" class="text-3xl font-bold text-orange-600 mb-2">247ms</div>
-                            <h3 class="text-lg font-semibold text-gray-800">Avg Latency</h3>
-                            <p class="text-sm text-gray-600">-23% faster</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- High Priority Optimizations -->
-                <div class="card p-6 rounded-xl mb-8">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">
-                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
-                        High Priority Optimizations
-                    </h3>
-                    
-                    <div id="optimizationList" class="space-y-4">
-                        <!-- Optimization items will be populated here -->
-                    </div>
-                </div>
-
-                <!-- PSP Performance Comparison -->
-                <div class="card p-6 rounded-xl mb-8">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">
-                        <i class="fas fa-balance-scale text-purple-500 mr-2"></i>
-                        PSP Performance Comparison
-                    </h3>
-                    
-                    <div id="pspComparison" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- PSP comparison cards will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Implementation Roadmap -->
-                <div class="card p-6 rounded-xl">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">
-                        <i class="fas fa-road text-green-500 mr-2"></i>
-                        Implementation Roadmap
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-red-50 p-6 rounded-lg">
-                            <h4 class="text-lg font-semibold text-red-900 mb-4">
-                                <i class="fas fa-clock text-red-500 mr-2"></i>
-                                Immediate (0-30 days)
-                            </h4>
-                            <ul id="immediateItems" class="space-y-2">
-                                <!-- Items will be populated -->
-                            </ul>
-                        </div>
-
-                        <div class="bg-orange-50 p-6 rounded-lg">
-                            <h4 class="text-lg font-semibold text-orange-900 mb-4">
-                                <i class="fas fa-calendar text-orange-500 mr-2"></i>
-                                Short-term (1-3 months)
-                            </h4>
-                            <ul id="shortTermItems" class="space-y-2">
-                                <!-- Items will be populated -->
-                            </ul>
-                        </div>
-
-                        <div class="bg-blue-50 p-6 rounded-lg">
-                            <h4 class="text-lg font-semibold text-blue-900 mb-4">
-                                <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>
-                                Long-term (3-6 months)
-                            </h4>
-                            <ul id="longTermItems" class="space-y-2">
-                                <!-- Items will be populated -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Monitoring Section -->
-            <div id="monitoring" class="section hidden">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-white mb-2">Real-time Monitoring</h2>
-                    <p class="text-blue-100">Monitor live transaction flows and system performance</p>
-                </div>
-                
-                <div class="card p-6 rounded-xl">
-                    <div class="text-center py-12">
-                        <i class="fas fa-desktop text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Monitoring Dashboard</h3>
-                        <p class="text-gray-600">Real-time monitoring features coming soon</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Section -->
-            <div id="settings" class="section hidden">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-white mb-2">Settings</h2>
-                    <p class="text-blue-100">Configure your OpenGW analyzer preferences</p>
-                </div>
-                
-                <div class="card p-6 rounded-xl">
-                    <div class="text-center py-12">
-                        <i class="fas fa-cog text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">System Settings</h3>
-                        <p class="text-gray-600">Configuration options coming soon</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Block Detail Modal -->
-    <div id="blockModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center z-50" onclick="closeBlockModal()">
-        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
-            <div id="modalHeader" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-                <!-- Header content will be populated -->
-            </div>
-            <div id="modalContent" class="p-6 overflow-y-auto max-h-[85vh]">
-                <!-- Content will be populated -->
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let currentBlocks = [];
         let allBlocks = [];
-
-        // Navigation
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            
-            // Show selected section
-            document.getElementById(sectionName).classList.remove('hidden');
-            
-            // Update navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.target.closest('.nav-item').classList.add('active');
-        }
+        let transactionSteps = [];
 
         // File upload handlers
         function handleDragOver(event) {
             event.preventDefault();
-            event.currentTarget.classList.add('dragover');
+            event.currentTarget.classList.add('drag-over');
         }
 
         function handleDragLeave(event) {
-            event.currentTarget.classList.remove('dragover');
+            event.currentTarget.classList.remove('drag-over');
         }
 
         function handleDrop(event) {
             event.preventDefault();
-            event.currentTarget.classList.remove('dragover');
-            
+            event.currentTarget.classList.remove('drag-over');
             const files = event.dataTransfer.files;
             if (files.length > 0) {
                 processFile(files[0]);
@@ -739,7 +185,7 @@
                 document.getElementById('fileInfo').innerHTML = `
                     <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
                     <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
-                    <p class="text-blue-800">Reading and parsing content...</p>
+                    <p class="text-blue-800">Analyzing real transaction steps...</p>
                 `;
                 
                 // Read file content
@@ -748,28 +194,24 @@
                 // Parse JSON content
                 const parsedData = JSON.parse(fileContent);
                 
-                // Extract blocks from the parsed data
-                const blocks = extractBlocks(parsedData);
+                // Extract real transaction steps
+                transactionSteps = extractRealTransactionSteps(parsedData);
                 
                 // Update file info with results
                 document.getElementById('fileInfo').innerHTML = `
                     <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
                     <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
-                    <p class="text-green-800">✅ Parsing complete - ${blocks.length} content blocks found</p>
+                    <p class="text-green-800">✅ Analysis complete - ${transactionSteps.length} transaction steps found</p>
                 `;
                 
-                // Store blocks globally
-                allBlocks = blocks;
-                currentBlocks = blocks;
+                // Wait a moment then show results
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                // Display blocks
-                displayBlocks(blocks);
+                // Display transaction steps analysis
+                displayTransactionStepsAnalysis();
                 
-                // Wait a moment before starting analysis
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Start analysis
-                startAnalysis();
+                // Display analysis results
+                displayAnalysisResults();
                 
             } catch (error) {
                 console.error('Error processing file:', error);
@@ -790,2021 +232,327 @@
             });
         }
 
-        // Extract blocks from parsed JSON data
-        function extractBlocks(data) {
-            const blocks = [];
+        // Extract real transaction steps from OpenGW log data
+        function extractRealTransactionSteps(data) {
+            const steps = [];
             
             if (Array.isArray(data)) {
                 data.forEach((entry, index) => {
-                    if (entry.content) {
-                        const block = parseLogEntry(entry, index + 1);
-                        if (block) {
-                            blocks.push(block);
+                    if (entry.content && entry.content.includes('OPENGW_MESSAGE_LOG')) {
+                        const step = parseTransactionStep(entry, index + 1);
+                        if (step) {
+                            steps.push(step);
                         }
                     }
                 });
             }
             
-            return blocks;
+            // Sort by timestamp to ensure correct order
+            steps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            return steps;
         }
 
-        // Parse individual log entry
-        function parseLogEntry(entry, blockId) {
+        // Parse individual transaction step from log entry
+        function parseTransactionStep(entry, stepNumber) {
             try {
                 const content = entry.content;
                 
-                // Extract message type and direction
-                const messageTypeMatch = content.match(/\[([^\]]+)\]\[([^\]]+)\]\[([^\]]+)\]/);
-                if (!messageTypeMatch) return null;
+                // Extract timestamp
+                const timeMatch = content.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})/);
+                const timestamp = timeMatch ? timeMatch[1] : entry.__time__;
                 
-                const [, protocol, api, direction] = messageTypeMatch;
+                // Extract direction and API type
+                const directionMatch = content.match(/\]\[([^\]]+)\]\[([^\]]+)\]\[([^\]]+)\]/);
+                const direction = directionMatch ? directionMatch[2] : 'UNKNOWN';
+                const apiType = directionMatch ? directionMatch[1] : 'UNKNOWN';
+                const endpoint = directionMatch ? directionMatch[3] : 'UNKNOWN';
                 
-                // Enhanced PSP/API identification with more detailed detection
+                // Extract PSP information
                 let psp = 'Unknown';
-                let pspDetails = {};
+                if (content.includes('ALIPW3SG')) psp = 'Alipay';
+                else if (content.includes('MASTERCARD') || content.includes('api.mastercard.com')) psp = 'Mastercard';
+                else if (content.includes('austreme')) psp = 'Austreme';
                 
-                // Check for Stone first (more specific patterns)
-                if (content.includes('STONE_ANTOM') || content.includes('STONE') || content.includes('stone')) {
-                    psp = 'Stone';
-                    pspDetails = {
-                        fullName: 'Stone Payments',
-                        region: 'Brazil',
-                        type: 'Payment Processor',
-                        icon: 'fas fa-gem',
-                        color: 'purple'
-                    };
-                } else if (content.includes('mundipagg') || content.includes('MUNDIPAGG')) {
-                    psp = 'Mundipagg';
-                    pspDetails = {
-                        fullName: 'Mundipagg (PagarMe)',
-                        region: 'Brazil',
-                        type: 'Payment Gateway',
-                        icon: 'fas fa-credit-card',
-                        color: 'indigo'
-                    };
-                } else if (content.includes('ALIPW3BR') || content.includes('alipay') || content.includes('OPENAPIv2')) {
-                    psp = 'Alipay';
-                    pspDetails = {
-                        fullName: 'Alipay International',
-                        region: 'Global',
-                        type: 'Digital Wallet',
-                        icon: 'fab fa-alipay',
-                        color: 'blue'
-                    };
-                } else if (content.includes('AUSTREME') || content.includes('austreme')) {
-                    psp = 'Austreme';
-                    pspDetails = {
-                        fullName: 'Austreme TLD',
-                        region: 'Global',
-                        type: 'Audit Service',
-                        icon: 'fas fa-shield-alt',
-                        color: 'pink'
-                    };
-                } else if (content.includes('WEBHOOK') || content.includes('webhook')) {
-                    psp = 'Webhook';
-                    pspDetails = {
-                        fullName: 'Webhook Notification',
-                        region: 'System',
-                        type: 'Notification Service',
-                        icon: 'fas fa-bell',
-                        color: 'yellow'
-                    };
-                } else if (content.includes('AUDIT') || content.includes('audit')) {
-                    psp = 'Audit';
-                    pspDetails = {
-                        fullName: 'Audit Logging',
-                        region: 'System',
-                        type: 'Audit Service',
-                        icon: 'fas fa-clipboard-list',
-                        color: 'red'
-                    };
-                } else if (content.includes('SETTLEMENT') || content.includes('settlement')) {
-                    psp = 'Settlement';
-                    pspDetails = {
-                        fullName: 'Settlement Processing',
-                        region: 'System',
-                        type: 'Settlement Service',
-                        icon: 'fas fa-handshake',
-                        color: 'green'
-                    };
-                } else if (content.includes('99') || content.includes('didi')) {
-                    psp = '99 Ride';
-                    pspDetails = {
-                        fullName: '99 Ride (DiDi)',
-                        region: 'Brazil',
-                        type: 'Merchant',
-                        icon: 'fas fa-car',
-                        color: 'orange'
-                    };
-                }
+                // Extract payload size
+                const payloadSize = content.length;
                 
-                // Extract content data
-                let contentData = '';
-                let contentType = 'JSON';
-                
-                // Look for JSON content - improved regex to handle nested braces
-                const jsonMatch = content.match(/MESSAGE_ENVELOPE_CONTENT\]\[({.*})\](?:\[MESSAGE_ENVELOPE_EXTRA\]|$)/);
-                if (jsonMatch) {
-                    contentData = jsonMatch[1];
-                    contentType = 'JSON';
-                } else {
-                    // Look for XML content
-                    const xmlMatch = content.match(/MESSAGE_ENVELOPE_CONTENT\]\[(<\?xml.*?<\/M>)\]/);
-                    if (xmlMatch) {
-                        contentData = xmlMatch[1];
-                        contentType = 'XML';
-                    } else {
-                        // Look for other content
-                        const otherMatch = content.match(/MESSAGE_ENVELOPE_CONTENT\]\[([^\]]+)\]/);
-                        if (otherMatch) {
-                            contentData = otherMatch[1];
-                            contentType = 'FORM';
-                        } else {
-                            // If no content found, return null to skip this entry
-                            return null;
-                        }
-                    }
-                }
-                
-                // Validate that we have actual content data
-                if (!contentData || contentData.trim() === '') {
-                    return null;
-                }
-                
-                // Calculate content size
-                const contentSize = new Blob([contentData]).size;
+                // Determine step type and optimization
+                const stepAnalysis = analyzeTransactionStep(content, direction, apiType, psp);
                 
                 return {
-                    id: blockId,
-                    type: contentType,
-                    psp: psp,
-                    pspDetails: pspDetails,
+                    stepNumber: stepNumber,
+                    timestamp: timestamp,
                     direction: direction,
-                    protocol: protocol,
-                    api: api,
-                    content: contentData,
-                    size: formatBytes(contentSize),
-                    timestamp: entry.__time__ || '',
-                    description: generateDescription(direction, psp, api),
-                    rawEntry: entry
+                    apiType: apiType,
+                    endpoint: endpoint,
+                    psp: psp,
+                    payloadSize: payloadSize,
+                    content: content.substring(0, 200) + '...', // Truncate for display
+                    analysis: stepAnalysis
                 };
-                
             } catch (error) {
-                console.error('Error parsing log entry:', error);
+                console.error('Error parsing transaction step:', error);
                 return null;
             }
         }
 
-        // Generate human-readable description
-        function generateDescription(direction, psp, api) {
-            const directionText = direction.replace('_', ' ').toLowerCase();
-            return `${directionText} - ${psp} ${api} processing`;
-        }
-
-        // Format bytes to human readable
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        // Display blocks in the UI
-        function displayBlocks(blocks) {
-            document.getElementById('contentBlocks').classList.remove('hidden');
-            document.getElementById('blockCount').textContent = `${blocks.length} blocks found`;
-            
-            // Populate PSP filter
-            const psps = [...new Set(blocks.map(block => block.psp))];
-            const pspFilter = document.getElementById('pspFilter');
-            pspFilter.innerHTML = '<option value="all">All PSPs</option>';
-            psps.forEach(psp => {
-                pspFilter.innerHTML += `<option value="${psp}">${psp}</option>`;
-            });
-            
-            // Render blocks
-            renderBlocks(blocks);
-        }
-
-        // Render blocks in the container
-        function renderBlocks(blocks) {
-            const container = document.getElementById('blocksContainer');
-            container.innerHTML = '';
-            
-            blocks.forEach(block => {
-                const blockElement = createBlockElement(block);
-                container.appendChild(blockElement);
-            });
-        }
-
-        // Create individual block element
-        function createBlockElement(block) {
-            const div = document.createElement('div');
-            div.className = `block-card ${block.type.toLowerCase()} border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer`;
-            
-            const typeColor = getTypeColor(block.type);
-            const pspColor = block.pspDetails.color || 'gray';
-            const directionColor = getDirectionColor(block.direction);
-            
-            div.innerHTML = `
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
-                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
-                            <i class="fas fa-hashtag mr-1"></i>
-                            ${block.id}
-                        </span>
-                        <span class="bg-${typeColor}-100 text-${typeColor}-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
-                            <i class="fas ${getTypeIcon(block.type)} mr-1"></i>
-                            ${block.type}
-                        </span>
-                        <span class="bg-${pspColor}-100 text-${pspColor}-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
-                            <i class="${block.pspDetails.icon || 'fas fa-server'} mr-1"></i>
-                            ${block.psp}
-                        </span>
-                        <span class="bg-${directionColor}-100 text-${directionColor}-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center">
-                            <i class="fas ${getDirectionIcon(block.direction)} mr-1"></i>
-                            ${formatDirection(block.direction)}
-                        </span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs text-gray-500">${block.size}</span>
-                        <div class="w-2 h-2 bg-${pspColor}-500 rounded-full"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <p class="text-sm text-gray-700 mb-2">${block.description}</p>
-                    ${block.pspDetails.fullName ? `
-                        <div class="flex items-center text-xs text-gray-600">
-                            <span class="font-medium">${block.pspDetails.fullName}</span>
-                            <span class="mx-2">•</span>
-                            <span>${block.pspDetails.region}</span>
-                            <span class="mx-2">•</span>
-                            <span>${block.pspDetails.type}</span>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="content-preview bg-gray-50 p-3 rounded text-xs border-l-4 border-${typeColor}-400">
-                    <pre class="whitespace-pre-wrap">${truncateContent(block.content, 200)}</pre>
-                </div>
-                
-                ${generateTransactionOptimizationHTML(block)}
-                
-                <div class="mt-3 flex justify-between items-center">
-                    <span class="text-xs text-gray-500 flex items-center">
-                        <i class="fas fa-clock mr-1"></i>
-                        ${formatTimestamp(block.timestamp)}
-                    </span>
-                    <button onclick="viewBlockDetails(${block.id})" class="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center">
-                        <span>View Details</span>
-                        <i class="fas fa-arrow-right ml-1"></i>
-                    </button>
-                </div>
-            `;
-            
-            return div;
-        }
-
-        // Get color for content type
-        function getTypeColor(type) {
-            const colors = {
-                'JSON': 'green',
-                'XML': 'orange',
-                'FORM': 'blue'
-            };
-            return colors[type] || 'gray';
-        }
-
-        // Get icon for content type
-        function getTypeIcon(type) {
-            const icons = {
-                'JSON': 'fa-code',
-                'XML': 'fa-file-code',
-                'FORM': 'fa-wpforms'
-            };
-            return icons[type] || 'fa-file';
-        }
-
-        // Get color for direction
-        function getDirectionColor(direction) {
-            const colors = {
-                'INBOUND_REQUEST': 'blue',
-                'OUTBOUND_REQUEST': 'purple',
-                'INBOUND_RESPONSE': 'green',
-                'OUTBOUND_RESPONSE': 'teal'
-            };
-            return colors[direction] || 'gray';
-        }
-
-        // Get icon for direction
-        function getDirectionIcon(direction) {
-            const icons = {
-                'INBOUND_REQUEST': 'fa-arrow-down',
-                'OUTBOUND_REQUEST': 'fa-arrow-up',
-                'INBOUND_RESPONSE': 'fa-arrow-left',
-                'OUTBOUND_RESPONSE': 'fa-arrow-right'
-            };
-            return icons[direction] || 'fa-exchange-alt';
-        }
-
-        // Format direction for display
-        function formatDirection(direction) {
-            const formatted = {
-                'INBOUND_REQUEST': 'In Req',
-                'OUTBOUND_REQUEST': 'Out Req',
-                'INBOUND_RESPONSE': 'In Resp',
-                'OUTBOUND_RESPONSE': 'Out Resp'
-            };
-            return formatted[direction] || direction;
-        }
-
-        // Get color for PSP (legacy function for compatibility)
-        function getPspColor(psp) {
-            const colors = {
-                'Alipay': 'blue',
-                'Stone': 'purple',
-                'Mundipagg': 'indigo',
-                'Austreme': 'pink',
-                'Webhook': 'yellow',
-                'Audit': 'red',
-                'Settlement': 'green',
-                '99 Ride': 'orange'
-            };
-            return colors[psp] || 'gray';
-        }
-
-        // Truncate content for preview
-        function truncateContent(content, maxLength) {
-            if (content.length <= maxLength) return content;
-            return content.substring(0, maxLength) + '...';
-        }
-
-        // Format timestamp
-        function formatTimestamp(timestamp) {
-            if (!timestamp) return 'Unknown time';
-            const date = new Date(parseInt(timestamp) * 1000);
-            return date.toLocaleString();
-        }
-
-        // Filter blocks
-        function filterBlocks() {
-            const typeFilter = document.getElementById('typeFilter').value;
-            const pspFilter = document.getElementById('pspFilter').value;
-            
-            let filteredBlocks = allBlocks;
-            
-            if (typeFilter !== 'all') {
-                filteredBlocks = filteredBlocks.filter(block => 
-                    block.type.toLowerCase() === typeFilter.toLowerCase()
-                );
-            }
-            
-            if (pspFilter !== 'all') {
-                filteredBlocks = filteredBlocks.filter(block => 
-                    block.psp === pspFilter
-                );
-            }
-            
-            currentBlocks = filteredBlocks;
-            document.getElementById('blockCount').textContent = `${filteredBlocks.length} blocks found`;
-            renderBlocks(filteredBlocks);
-        }
-
-        // View block details in modal
-        function viewBlockDetails(blockId) {
-            const block = allBlocks.find(b => b.id === blockId);
-            if (!block) return;
-            
-            showBlockModal(block);
-        }
-
-        // Show block modal
-        function showBlockModal(block) {
-            const modal = document.getElementById('blockModal');
-            const header = document.getElementById('modalHeader');
-            const content = document.getElementById('modalContent');
-            
-            const typeColor = getTypeColor(block.type);
-            const pspColor = getPspColor(block.psp);
-            
-            header.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold">Block ${block.id} Details</h3>
-                    <button onclick="closeBlockModal()" class="text-white hover:text-gray-200">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                <div class="flex items-center mt-2 space-x-2">
-                    <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded">
-                        ${block.type}
-                    </span>
-                    <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded">
-                        ${block.psp}
-                    </span>
-                    <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded">
-                        ${block.direction}
-                    </span>
-                </div>
-            `;
-            
-            content.innerHTML = `
-                <div class="space-y-6">
-                    <!-- Block Information -->
-                    <div>
-                        <h4 class="text-lg font-semibold mb-3">Block Information</h4>
-                        <div class="grid grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">Type:</span>
-                                <span class="ml-2 text-sm font-semibold">${block.type}</span>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">PSP:</span>
-                                <span class="ml-2 text-sm font-semibold">${block.psp}</span>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">Direction:</span>
-                                <span class="ml-2 text-sm font-semibold">${block.direction}</span>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">Size:</span>
-                                <span class="ml-2 text-sm">${block.size}</span>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">Protocol:</span>
-                                <span class="ml-2 text-sm">${block.protocol}</span>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-600">Timestamp:</span>
-                                <span class="ml-2 text-sm">${formatTimestamp(block.timestamp)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Content Tabs -->
-                    <div>
-                        <div class="content-tabs flex">
-                            <div class="content-tab active" onclick="switchContentTab('formatted', ${block.id})">
-                                <i class="fas fa-code mr-2"></i>Formatted
-                            </div>
-                            <div class="content-tab" onclick="switchContentTab('raw', ${block.id})">
-                                <i class="fas fa-file-alt mr-2"></i>Raw
-                            </div>
-                            <div class="content-tab" onclick="switchContentTab('analysis', ${block.id})">
-                                <i class="fas fa-chart-line mr-2"></i>Analysis
-                            </div>
-                            <div class="content-tab" onclick="switchContentTab('flow', ${block.id})">
-                                <i class="fas fa-route mr-2"></i>Flow
-                            </div>
-                        </div>
-                        
-                        <!-- Formatted Content Tab -->
-                        <div id="formatted-${block.id}" class="content-panel">
-                            <div class="relative bg-gray-100 p-4 rounded-lg overflow-x-auto">
-                                <button class="copy-button" onclick="copyToClipboard('formatted-content-${block.id}')">
-                                    <i class="fas fa-copy mr-1"></i>Copy
-                                </button>
-                                <pre id="formatted-content-${block.id}" class="text-sm syntax-highlight whitespace-pre-wrap break-words max-h-96 overflow-y-auto">${highlightSyntax(formatContent(block.content, block.type), block.type)}</pre>
-                            </div>
-                        </div>
-                        
-                        <!-- Raw Content Tab -->
-                        <div id="raw-${block.id}" class="content-panel hidden">
-                            <div class="relative bg-gray-100 p-4 rounded-lg overflow-x-auto">
-                                <button class="copy-button" onclick="copyToClipboard('raw-content-${block.id}')">
-                                    <i class="fas fa-copy mr-1"></i>Copy
-                                </button>
-                                <pre id="raw-content-${block.id}" class="text-sm whitespace-pre-wrap break-words max-h-96 overflow-y-auto">${escapeHtml(block.content)}</pre>
-                            </div>
-                        </div>
-                        
-                        <!-- Analysis Tab -->
-                        <div id="analysis-${block.id}" class="content-panel hidden">
-                            <div class="space-y-4">
-                                <div class="bg-blue-50 p-4 rounded-lg">
-                                    <h5 class="font-semibold text-blue-900 mb-2">Content Analysis</h5>
-                                    <p class="text-sm text-blue-800">${analyzeContent(block)}</p>
-                                </div>
-                                <div class="bg-green-50 p-4 rounded-lg">
-                                    <h5 class="font-semibold text-green-900 mb-2">Security Insights</h5>
-                                    <p class="text-sm text-green-800">${getSecurityInsights(block)}</p>
-                                </div>
-                                <div class="bg-purple-50 p-4 rounded-lg">
-                                    <h5 class="font-semibold text-purple-900 mb-2">Performance Metrics</h5>
-                                    <p class="text-sm text-purple-800">${getPerformanceMetrics(block)}</p>
-                                </div>
-                                <div class="bg-yellow-50 p-4 rounded-lg">
-                                    <h5 class="font-semibold text-yellow-900 mb-2">
-                                        <i class="fas fa-lightbulb mr-2"></i>Transaction Optimizations
-                                    </h5>
-                                    <div id="transaction-optimizations-${block.id}">
-                                        ${generateDetailedTransactionOptimizations(block)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Flow Tab -->
-                        <div id="flow-${block.id}" class="content-panel hidden">
-                            <div class="bg-gray-50 p-4 rounded-lg">
-                                <h5 class="font-semibold text-gray-900 mb-4">Transaction Flow Position</h5>
-                                ${generateFlowDiagram(block)}
-                                <div class="mt-4 text-sm text-gray-700">
-                                    <p><strong>Flow Description:</strong> ${getFlowDescription(block)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
-        }
-
-        // Format content for display
-        function formatContent(content, type) {
-            try {
-                if (type === 'JSON') {
-                    // Check for nested JSON strings and format them too
-                    const parsed = JSON.parse(content);
-                    return formatNestedJsonContent(parsed);
-                } else if (type === 'XML') {
-                    // Check if this is mixed XML/JSON content (like Blocks #2 and #9)
-                    if (content.includes('<![CDATA[{') && content.includes('}]]>')) {
-                        return formatMixedXmlJsonContent(content);
-                    }
-                    
-                    // Enhanced XML formatting with proper indentation
-                    let formatted = content;
-                    
-                    // Add line breaks between tags
-                    formatted = formatted.replace(/></g, '>\n<');
-                    
-                    // Add proper indentation
-                    const lines = formatted.split('\n');
-                    let indentLevel = 0;
-                    const indentedLines = [];
-                    
-                    for (let line of lines) {
-                        const trimmedLine = line.trim();
-                        if (!trimmedLine) continue;
-                        
-                        // Decrease indent for closing tags
-                        if (trimmedLine.startsWith('</')) {
-                            indentLevel = Math.max(0, indentLevel - 1);
-                        }
-                        
-                        // Add indentation
-                        const indent = '  '.repeat(indentLevel);
-                        indentedLines.push(indent + trimmedLine);
-                        
-                        // Increase indent for opening tags (but not self-closing or closing tags)
-                        if (trimmedLine.startsWith('<') && 
-                            !trimmedLine.startsWith('</') && 
-                            !trimmedLine.endsWith('/>') &&
-                            !trimmedLine.includes('<?')) {
-                            indentLevel++;
-                        }
-                    }
-                    
-                    return indentedLines.join('\n');
-                } else {
-                    return content;
-                }
-            } catch (error) {
-                return content;
-            }
-        }
-
-        function formatNestedJsonContent(obj) {
-            // Enhanced nested JSON formatting for Blocks #3, #5, #8, #12, #16
-            function formatNestedJson(obj) {
-                if (typeof obj === 'string') {
-                    // Try to parse as JSON if it looks like JSON
-                    if ((obj.startsWith('{') && obj.endsWith('}')) || 
-                        (obj.startsWith('[') && obj.endsWith(']'))) {
-                        try {
-                            const nestedParsed = JSON.parse(obj);
-                            return formatNestedJson(nestedParsed); // Recursively format
-                        } catch (e) {
-                            return obj; // Return original if not valid JSON
-                        }
-                    }
-                    return obj;
-                } else if (Array.isArray(obj)) {
-                    return obj.map(formatNestedJson);
-                } else if (obj !== null && typeof obj === 'object') {
-                    const formatted = {};
-                    for (const [key, value] of Object.entries(obj)) {
-                        formatted[key] = formatNestedJson(value);
-                    }
-                    return formatted;
-                }
-                return obj;
-            }
-            
-            const formattedWithNested = formatNestedJson(obj);
-            return JSON.stringify(formattedWithNested, null, 2);
-        }
-
-        function formatMixedXmlJsonContent(content) {
-            try {
-                let formatted = content;
-                
-                // First, extract and format JSON from CDATA sections
-                const cdataRegex = /<!\[CDATA\[(.*?)\]\]>/gs;
-                formatted = formatted.replace(cdataRegex, (match, jsonContent) => {
-                    try {
-                        // Parse and format the JSON
-                        const parsed = JSON.parse(jsonContent);
-                        const formattedJson = JSON.stringify(parsed, null, 4); // 4 spaces for nested indentation
-                        
-                        // Return formatted CDATA with proper indentation
-                        const indentedJson = formattedJson.split('\n').map(line => 
-                            line ? '    ' + line : line // Add 4 spaces for CDATA content
-                        ).join('\n');
-                        
-                        return `<![CDATA[\n${indentedJson}\n]]>`;
-                    } catch (e) {
-                        // If JSON parsing fails, return original CDATA
-                        return match;
-                    }
-                });
-                
-                // Then format the XML structure
-                // Add line breaks between tags
-                formatted = formatted.replace(/></g, '>\n<');
-                
-                // Add proper indentation for XML structure
-                const lines = formatted.split('\n');
-                let indentLevel = 0;
-                const indentedLines = [];
-                let insideCDATA = false;
-                
-                for (let line of lines) {
-                    const trimmedLine = line.trim();
-                    if (!trimmedLine) continue;
-                    
-                    // Check if we're entering or leaving CDATA
-                    if (trimmedLine.includes('<![CDATA[')) {
-                        insideCDATA = true;
-                    }
-                    if (trimmedLine.includes(']]>')) {
-                        insideCDATA = false;
-                    }
-                    
-                    // Don't modify indentation inside CDATA sections
-                    if (insideCDATA && !trimmedLine.includes('<![CDATA[') && !trimmedLine.includes(']]>')) {
-                        indentedLines.push(line); // Keep original indentation for JSON
-                        continue;
-                    }
-                    
-                    // Decrease indent for closing tags
-                    if (trimmedLine.startsWith('</')) {
-                        indentLevel = Math.max(0, indentLevel - 1);
-                    }
-                    
-                    // Add indentation for XML tags
-                    const indent = '  '.repeat(indentLevel);
-                    indentedLines.push(indent + trimmedLine);
-                    
-                    // Increase indent for opening tags (but not self-closing or closing tags)
-                    if (trimmedLine.startsWith('<') && 
-                        !trimmedLine.startsWith('</') && 
-                        !trimmedLine.endsWith('/>') &&
-                        !trimmedLine.includes('<?') &&
-                        !trimmedLine.includes('<![CDATA[')) {
-                        indentLevel++;
-                    }
-                }
-                
-                return indentedLines.join('\n');
-            } catch (error) {
-                console.error('Error formatting mixed XML/JSON content:', error);
-                return content;
-            }
-        }
-
-        // Analyze content for insights
-        function analyzeContent(block) {
-            const insights = [];
-            
-            if (block.content.includes('paymentAmount')) {
-                const amountMatch = block.content.match(/"value":"(\d+)"/);
-                if (amountMatch) {
-                    insights.push(`Payment amount: ${amountMatch[1]} cents`);
-                }
-            }
-            
-            if (block.content.includes('currency')) {
-                const currencyMatch = block.content.match(/"currency":"([^"]+)"/);
-                if (currencyMatch) {
-                    insights.push(`Currency: ${currencyMatch[1]}`);
-                }
-            }
-            
-            if (block.content.includes('cardNo')) {
-                insights.push('Contains masked card information');
-            }
-            
-            if (block.content.includes('3DS')) {
-                insights.push('3D Secure authentication involved');
-            }
-            
-            return insights.length > 0 ? insights.join(', ') : 'Standard payment processing data';
-        }
-
-        // Close block modal
-        function closeBlockModal() {
-            document.getElementById('blockModal').classList.add('hidden');
-        }
-
-        // Start analysis process
-        async function startAnalysis() {
-            document.getElementById('analysisStatus').classList.remove('hidden');
-            document.getElementById('analysisStatus').classList.add('fade-in');
-            
-            // Simulate PSP analysis completion
-            setTimeout(() => {
-                const pspStatus = document.getElementById('pspAnalysisStatus');
-                pspStatus.innerHTML = `
-                    <div class="flex items-center mb-2">
-                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                        <h4 class="font-medium text-blue-900">PSP API Analysis</h4>
-                    </div>
-                    <p class="text-sm text-blue-700">✅ Complete - ${[...new Set(allBlocks.map(b => b.psp))].length} PSPs analyzed</p>
-                `;
-                pspStatus.classList.remove('bg-blue-50');
-                pspStatus.classList.add('bg-green-50');
-            }, 3000);
-            
-            // Simulate Multi-Agent analysis completion
-            setTimeout(() => {
-                const multiAgent = document.getElementById('multiAgentStatus');
-                multiAgent.innerHTML = `
-                    <div class="flex items-center mb-2">
-                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                        <h4 class="font-medium text-purple-900">Multi-Agent Analysis</h4>
-                    </div>
-                    <p class="text-sm text-purple-700">✅ Complete - Risk, compliance, fraud analyzed</p>
-                `;
-                multiAgent.classList.remove('bg-purple-50');
-                multiAgent.classList.add('bg-green-50');
-            }, 4000);
-            
-            // Simulate Flow analysis completion
-            setTimeout(() => {
-                const flowStatus = document.getElementById('flowAnalysisStatus');
-                flowStatus.innerHTML = `
-                    <div class="flex items-center mb-2">
-                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                        <h4 class="font-medium text-green-900">Transaction Flow Analysis</h4>
-                    </div>
-                    <p class="text-sm text-green-700">✅ Complete - Flow strategy analyzed</p>
-                `;
-                flowStatus.classList.remove('bg-green-50');
-                flowStatus.classList.add('bg-green-100');
-            }, 5000);
-            
-            // Show detailed results
-            setTimeout(() => {
-                showDetailedResults();
-            }, 6000);
-        }
-
-        // Show detailed analysis results with real data processing
-        function showDetailedResults() {
-            const analysis = performRealDataAnalysis();
-            
-            document.getElementById('pspSummary').innerHTML = `
-                <p class="text-sm text-blue-700 mb-2">✅ ${analysis.psp.count} PSPs identified: ${analysis.psp.names.join(', ')}</p>
-                <p class="text-sm text-blue-700 mb-1">✅ ${analysis.psp.totalBlocks} total blocks processed</p>
-                <p class="text-sm text-blue-700">✅ Primary flow: ${analysis.psp.primaryFlow}</p>
-            `;
-            
-            document.getElementById('aiSummary').innerHTML = `
-                <p class="text-sm text-purple-700 mb-2">✅ Risk Score: ${analysis.risk.score} (${analysis.risk.level})</p>
-                <p class="text-sm text-purple-700 mb-1">✅ Security: ${analysis.security.status}</p>
-                <p class="text-sm text-purple-700">✅ Compliance: ${analysis.compliance.status}</p>
-            `;
-            
-            document.getElementById('flowSummary').innerHTML = `
-                <p class="text-sm text-green-700 mb-2">✅ ${analysis.flow.strategy}</p>
-                <p class="text-sm text-green-700 mb-1">✅ ${analysis.flow.contentTypes}</p>
-                <p class="text-sm text-green-700">✅ Avg processing: ${analysis.flow.avgProcessingTime}</p>
-            `;
-            
-            document.getElementById('detailedResults').classList.remove('hidden');
-            document.getElementById('detailedResults').classList.add('fade-in');
-        }
-
-        // Perform real data analysis on the uploaded blocks
-        function performRealDataAnalysis() {
-            const psps = [...new Set(allBlocks.map(b => b.psp))];
-            const jsonBlocks = allBlocks.filter(b => b.type === 'JSON').length;
-            const xmlBlocks = allBlocks.filter(b => b.type === 'XML').length;
-            const formBlocks = allBlocks.filter(b => b.type === 'FORM').length;
-            
-            // Analyze transaction flow
-            const flowAnalysis = analyzeTransactionFlow();
-            
-            // Analyze security aspects
-            const securityAnalysis = analyzeSecurityAspects();
-            
-            // Analyze risk factors
-            const riskAnalysis = analyzeRiskFactors();
-            
-            // Analyze compliance
-            const complianceAnalysis = analyzeCompliance();
-            
-            // Determine primary flow
-            const primaryFlow = determinePrimaryFlow();
-            
-            return {
-                psp: {
-                    count: psps.length,
-                    names: psps.filter(p => p !== 'Unknown'),
-                    totalBlocks: allBlocks.length,
-                    primaryFlow: primaryFlow
-                },
-                risk: riskAnalysis,
-                security: securityAnalysis,
-                compliance: complianceAnalysis,
-                flow: {
-                    strategy: flowAnalysis.strategy,
-                    contentTypes: `${jsonBlocks} JSON, ${xmlBlocks} XML, ${formBlocks} FORM`,
-                    avgProcessingTime: flowAnalysis.avgProcessingTime
-                }
-            };
-        }
-
-        // Analyze transaction flow patterns
-        function analyzeTransactionFlow() {
-            const inboundRequests = allBlocks.filter(b => b.direction === 'INBOUND_REQUEST').length;
-            const outboundRequests = allBlocks.filter(b => b.direction === 'OUTBOUND_REQUEST').length;
-            const responses = allBlocks.filter(b => b.direction.includes('RESPONSE')).length;
-            
-            let strategy = 'Single PSP flow';
-            if (outboundRequests > 1) {
-                strategy = 'Multi-PSP routing detected';
-            }
-            
-            // Calculate estimated processing time based on block count and content size
-            const totalSize = allBlocks.reduce((sum, block) => {
-                const sizeMatch = block.size.match(/(\d+\.?\d*)/);
-                return sum + (sizeMatch ? parseFloat(sizeMatch[1]) : 0);
-            }, 0);
-            
-            const avgProcessingTime = Math.round((totalSize / allBlocks.length) * 10) + 'ms';
-            
-            return {
-                strategy,
-                avgProcessingTime,
-                inboundRequests,
-                outboundRequests,
-                responses
-            };
-        }
-
-        // Analyze security aspects from block content
-        function analyzeSecurityAspects() {
-            let securityFeatures = [];
-            let hasCardMasking = false;
-            let has3DS = false;
-            let hasSignature = false;
-            let hasHTTPS = false;
-            
-            allBlocks.forEach(block => {
-                if (block.content.includes('************') || block.content.includes('cardNo')) {
-                    hasCardMasking = true;
-                }
-                if (block.content.includes('3DS') || block.content.includes('authentication')) {
-                    has3DS = true;
-                }
-                if (block.content.includes('signature') || block.content.includes('RSA')) {
-                    hasSignature = true;
-                }
-                if (block.content.includes('https://')) {
-                    hasHTTPS = true;
-                }
-            });
-            
-            if (hasCardMasking) securityFeatures.push('Card masking');
-            if (has3DS) securityFeatures.push('3D Secure');
-            if (hasSignature) securityFeatures.push('Digital signatures');
-            if (hasHTTPS) securityFeatures.push('HTTPS encryption');
-            
-            const status = securityFeatures.length >= 3 ? 'High security' : 
-                          securityFeatures.length >= 2 ? 'Good security' : 'Basic security';
-            
-            return {
-                status,
-                features: securityFeatures
-            };
-        }
-
-        // Analyze risk factors
-        function analyzeRiskFactors() {
-            let riskScore = 0;
-            let riskFactors = [];
-            
-            // Check for error indicators
-            const hasErrors = allBlocks.some(block => 
-                block.content.includes('error') || 
-                block.content.includes('failed') ||
-                block.content.includes('timeout')
-            );
-            
-            if (hasErrors) {
-                riskScore += 15;
-                riskFactors.push('Error conditions detected');
-            }
-            
-            // Check for high-value transactions
-            const hasHighValue = allBlocks.some(block => {
-                const amountMatch = block.content.match(/"value":"(\d+)"/);
-                return amountMatch && parseInt(amountMatch[1]) > 10000; // > 100 in major currency
-            });
-            
-            if (hasHighValue) {
-                riskScore += 10;
-                riskFactors.push('High-value transaction');
-            }
-            
-            // Check for international transactions
-            const hasInternational = allBlocks.some(block => 
-                block.content.includes('BRL') || 
-                block.content.includes('USD') ||
-                block.content.includes('international')
-            );
-            
-            if (hasInternational) {
-                riskScore += 5;
-                riskFactors.push('Cross-border transaction');
-            }
-            
-            // Determine risk level
-            let level = 'Low';
-            if (riskScore > 20) level = 'High';
-            else if (riskScore > 10) level = 'Medium';
-            
-            return {
-                score: riskScore.toFixed(1) + '%',
-                level,
-                factors: riskFactors
-            };
-        }
-
-        // Analyze compliance aspects
-        function analyzeCompliance() {
-            let complianceChecks = [];
-            let passedChecks = 0;
-            
-            // Check for PCI DSS compliance indicators
-            const hasCardMasking = allBlocks.some(block => 
-                block.content.includes('************')
-            );
-            complianceChecks.push({ name: 'PCI DSS - Card masking', passed: hasCardMasking });
-            if (hasCardMasking) passedChecks++;
-            
-            // Check for audit logging
-            const hasAuditLog = allBlocks.some(block => 
-                block.psp === 'Audit' || block.content.includes('audit')
-            );
-            complianceChecks.push({ name: 'Audit logging', passed: hasAuditLog });
-            if (hasAuditLog) passedChecks++;
-            
-            // Check for secure communication
-            const hasSecureComm = allBlocks.some(block => 
-                block.content.includes('https://') || block.protocol === 'HTTPS'
-            );
-            complianceChecks.push({ name: 'Secure communication', passed: hasSecureComm });
-            if (hasSecureComm) passedChecks++;
-            
-            // Check for proper authentication
-            const hasAuth = allBlocks.some(block => 
-                block.content.includes('signature') || 
-                block.content.includes('authentication')
-            );
-            complianceChecks.push({ name: 'Authentication', passed: hasAuth });
-            if (hasAuth) passedChecks++;
-            
-            const status = passedChecks === complianceChecks.length ? 'PASS' : 
-                          passedChecks >= complianceChecks.length * 0.75 ? 'PARTIAL' : 'FAIL';
-            
-            return {
-                status,
-                passedChecks,
-                totalChecks: complianceChecks.length,
-                checks: complianceChecks
-            };
-        }
-
-        // Determine primary transaction flow
-        function determinePrimaryFlow() {
-            const pspCounts = {};
-            allBlocks.forEach(block => {
-                if (block.psp !== 'Unknown') {
-                    pspCounts[block.psp] = (pspCounts[block.psp] || 0) + 1;
-                }
-            });
-            
-            const primaryPSP = Object.keys(pspCounts).reduce((a, b) => 
-                pspCounts[a] > pspCounts[b] ? a : b, 'Unknown'
-            );
-            
-            // Analyze flow pattern
-            const hasMultiplePSPs = Object.keys(pspCounts).length > 2;
-            const hasSettlement = allBlocks.some(block => block.psp === 'Settlement');
-            
-            if (hasMultiplePSPs && hasSettlement) {
-                return `Multi-PSP routing via ${primaryPSP} with settlement`;
-            } else if (hasMultiplePSPs) {
-                return `Multi-PSP routing via ${primaryPSP}`;
-            } else {
-                return `Direct ${primaryPSP} processing`;
-            }
-        }
-
-        // Enhanced content formatting functions
-        function highlightSyntax(content, type) {
-            if (type === 'JSON') {
-                return highlightJSON(content);
-            } else if (type === 'XML') {
-                return highlightXML(content);
-            }
-            return escapeHtml(content);
-        }
-
-        function highlightJSON(jsonString) {
-            return jsonString
-                .replace(/("[\w\d_-]+")(\s*:)/g, '<span class="json-key">$1</span>$2')
-                .replace(/:\s*(".*?")/g, ': <span class="json-string">$1</span>')
-                .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-                .replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>')
-                .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
-        }
-
-        function highlightXML(xmlString) {
-            // Check if the content is already HTML-escaped
-            const isEscaped = xmlString.includes('&lt;') || xmlString.includes('&gt;');
-            
-            let content;
-            if (isEscaped) {
-                // Content is already escaped, use as-is
-                content = xmlString;
-            } else {
-                // Content is raw XML, escape it first
-                content = escapeHtml(xmlString);
-            }
-            
-            // Apply syntax highlighting to the escaped content
-            return content
-                .replace(/(&lt;\?xml[^&]*\?&gt;)/g, '<span class="xml-declaration">$1</span>')
-                .replace(/(&lt;!\[CDATA\[)/g, '<span class="xml-cdata">$1')
-                .replace(/(\]\]&gt;)/g, '$1</span>')
-                .replace(/(&lt;\/?[\w\d-]+)/g, '<span class="xml-tag">$1</span>')
-                .replace(/(&gt;)/g, '<span class="xml-tag">$1</span>')
-                .replace(/([\w\d-]+)=(".*?")/g, '<span class="xml-attr">$1</span>=<span class="xml-value">$2</span>');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Tab switching functionality
-        function switchContentTab(tabName, blockId) {
-            // Hide all panels for this block
-            const panels = ['formatted', 'raw', 'analysis', 'flow'];
-            panels.forEach(panel => {
-                const element = document.getElementById(`${panel}-${blockId}`);
-                if (element) element.classList.add('hidden');
-            });
-
-            // Remove active class from all tabs
-            document.querySelectorAll('.content-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Show selected panel
-            const selectedPanel = document.getElementById(`${tabName}-${blockId}`);
-            if (selectedPanel) selectedPanel.classList.remove('hidden');
-
-            // Add active class to clicked tab
-            event.target.closest('.content-tab').classList.add('active');
-        }
-
-        // Copy to clipboard functionality
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                const text = element.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    // Show feedback
-                    const button = event.target.closest('.copy-button');
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
-                    setTimeout(() => {
-                        button.innerHTML = originalText;
-                    }, 2000);
-                });
-            }
-        }
-
-        // Enhanced analysis functions
-        function getSecurityInsights(block) {
-            const insights = [];
-            
-            if (block.content.includes('cardNo') || block.content.includes('number')) {
-                insights.push('Card data is properly masked for security');
-            }
-            
-            if (block.content.includes('3DS') || block.content.includes('authentication')) {
-                insights.push('3D Secure authentication protocols detected');
-            }
-            
-            if (block.content.includes('signature') || block.content.includes('RSA')) {
-                insights.push('Digital signature verification present');
-            }
-            
-            if (block.content.includes('https://')) {
-                insights.push('Secure HTTPS communication used');
-            }
-            
-            return insights.length > 0 ? insights.join('. ') : 'Standard security measures applied';
-        }
-
-        function getPerformanceMetrics(block) {
-            const metrics = [];
-            
-            // Estimate processing time based on content size
-            const contentSize = new Blob([block.content]).size;
-            if (contentSize > 2000) {
-                metrics.push('Large payload detected - may impact performance');
-            } else {
-                metrics.push('Optimal payload size for fast processing');
-            }
-            
-            // Check for timeout settings
-            if (block.content.includes('timeout') || block.content.includes('READ_TIMEOUT')) {
-                const timeoutMatch = block.content.match(/timeout["\s:]*(\d+)/i);
-                if (timeoutMatch) {
-                    metrics.push(`Timeout configured: ${timeoutMatch[1]}ms`);
-                }
-            }
-            
-            // Check for retry mechanisms
-            if (block.content.includes('retry') || block.content.includes('attempt')) {
-                metrics.push('Retry mechanism available');
-            }
-            
-            return metrics.length > 0 ? metrics.join('. ') : 'Standard performance characteristics';
-        }
-
-        function generateFlowDiagram(block) {
-            const flowSteps = [
-                { name: 'Client', active: block.direction.includes('INBOUND') && block.psp === 'Alipay' },
-                { name: 'Gateway', active: true },
-                { name: block.psp, active: true },
-                { name: 'Settlement', active: block.psp === 'Settlement' }
-            ];
-
-            return `
-                <div class="flow-diagram">
-                    ${flowSteps.map((step, index) => `
-                        <div class="flow-step ${step.active ? 'active' : ''}">
-                            <div class="text-sm font-medium">${step.name}</div>
-                        </div>
-                        ${index < flowSteps.length - 1 ? '<i class="fas fa-arrow-right flow-arrow"></i>' : ''}
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function getFlowDescription(block) {
-            const descriptions = {
-                'INBOUND_REQUEST': 'Incoming request from client or upstream system',
-                'OUTBOUND_REQUEST': 'Outgoing request to downstream PSP or service',
-                'INBOUND_RESPONSE': 'Response received from downstream system',
-                'OUTBOUND_RESPONSE': 'Response sent back to client or upstream system'
-            };
-            
-            return descriptions[block.direction] || 'Payment processing flow step';
-        }
-
-        // Transaction-Specific Optimization Functions
-        function generateTransactionOptimizationHTML(block) {
-            const optimizations = analyzeTransactionForOptimizations(block);
-            
-            if (optimizations.length === 0) {
-                return '';
-            }
-            
-            return `
-                <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <div class="flex items-center mb-2">
-                        <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
-                        <span class="text-xs font-medium text-yellow-800">Transaction Optimizations</span>
-                    </div>
-                    <div class="space-y-2">
-                        ${optimizations.map(opt => `
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <div class="text-xs text-yellow-700 font-medium">${opt.title}</div>
-                                    <div class="text-xs text-yellow-600">${opt.description}</div>
-                                    <div class="text-xs text-green-600 font-medium mt-1">
-                                        <i class="fas fa-chart-line mr-1"></i>${opt.impact}
-                                    </div>
-                                </div>
-                                <div class="ml-2">
-                                    <span class="bg-${opt.priority === 'HIGH' ? 'red' : opt.priority === 'MEDIUM' ? 'yellow' : 'green'}-500 text-white text-xs px-2 py-1 rounded">${opt.priority}</span>
-                                </div>
-                            </div>
-                            ${opt.implementation ? `
-                                <div class="mt-2">
-                                    <button onclick="showTransactionImplementation('${opt.title}', '${block.id}')" 
-                                            class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded">
-                                        <i class="fas fa-code mr-1"></i>Show Implementation
-                                    </button>
-                                </div>
-                            ` : ''}
-                        `).join('<hr class="border-yellow-200 my-2">')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function analyzeTransactionForOptimizations(block) {
+        // Analyze individual transaction step for optimizations
+        function analyzeTransactionStep(content, direction, apiType, psp) {
             const optimizations = [];
-            const content = block.content.toLowerCase();
-            const originalContent = block.content;
             
-            // Parse JSON content for detailed analysis
-            let parsedContent = null;
-            try {
-                const contentMatch = originalContent.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\]\[MESSAGE_ENVELOPE_EXTRA\]/);
-                if (contentMatch) {
-                    parsedContent = JSON.parse(contentMatch[1]);
-                }
-            } catch (e) {
-                // Fallback to basic string analysis
-            }
-
-            // Block-specific unique optimizations
-            const blockSpecificOptimizations = {
-                1: [ // Payment initialization with 99 Ride
-                    {
-                        title: 'Ride-Share Payment Optimization',
-                        description: 'Optimize for ride-sharing payment patterns with pre-authorization',
-                        impact: '35% faster ride completion',
-                        priority: 'HIGH',
-                        implementation: `// Ride-share payment optimization
-function optimizeRidePayment(rideData) {
-    return {
-        preAuthAmount: rideData.estimatedFare * 1.2,
-        captureMode: 'DELAYED',
-        autoCapture: true,
-        tipHandling: 'SEPARATE_TRANSACTION'
-    };
-}`
-                    },
-                    {
-                        title: 'Brazilian Market Compliance',
-                        description: 'Add CPF validation and local tax calculation for BR market',
-                        impact: '100% regulatory compliance',
-                        priority: 'HIGH',
-                        implementation: `// Brazilian compliance
-function validateBrazilianPayment(payment) {
-    return {
-        cpfValidation: validateCPF(payment.buyer.document),
-        taxCalculation: calculateBrazilianTax(payment.amount),
-        bacenReporting: true
-    };
-}`
-                    }
-                ],
-                2: [ // XML API call to Alipay
-                    {
-                        title: 'XML to JSON Migration',
-                        description: 'Migrate from XML to JSON API for better performance',
-                        impact: '45% smaller payload, 30% faster parsing',
-                        priority: 'MEDIUM',
-                        implementation: `// XML to JSON migration for Alipay
-const jsonPayload = {
-    "method": "alipay.ams.payments.pay",
-    "version": "1.0",
-    "partnerId": "2188120220832502",
-    "body": {
-        // Convert XML CDATA to JSON structure
-        "merchantAccountId": "2159110299886890",
-        "paymentAmount": { "currency": "BRL", "value": "1327" }
-    }
-};`
-                    }
-                ],
-                3: [ // Payment processing with authentication
-                    {
-                        title: 'Biometric Authentication',
-                        description: 'Add biometric authentication for Android users',
-                        impact: '50% reduction in fraud, better UX',
-                        priority: 'HIGH',
-                        implementation: `// Biometric authentication
-function enableBiometricAuth(deviceInfo) {
-    if (deviceInfo.osType === 'Android' && deviceInfo.biometricCapable) {
-        return {
-            authMethod: 'FINGERPRINT_OR_FACE',
-            fallbackTo3DS: true,
-            timeout: 30000
-        };
-    }
-    return { authMethod: '3DS_ONLY' };
-}`
-                    }
-                ],
-                4: [ // Stone integration response
-                    {
-                        title: 'Stone Webhook Optimization',
-                        description: 'Implement async webhook processing for Stone responses',
-                        impact: '60% faster response handling',
-                        priority: 'HIGH',
-                        implementation: `// Stone webhook optimization
-class StoneWebhookProcessor {
-    async processWebhook(payload) {
-        // Immediate acknowledgment
-        const ack = { status: 'RECEIVED', timestamp: Date.now() };
-        
-        // Async processing
-        setImmediate(() => this.processPaymentUpdate(payload));
-        
-        return ack;
-    }
-    
-    async processPaymentUpdate(payload) {
-        // Update payment status in database
-        // Send notifications
-        // Update analytics
-    }
-}`
-                    }
-                ],
-                5: [ // Nested JSON with payment details
-                    {
-                        title: 'Payment Data Flattening',
-                        description: 'Flatten nested payment data for faster database operations',
-                        impact: '40% faster database writes',
-                        priority: 'MEDIUM',
-                        implementation: `// Payment data flattening
-function flattenPaymentData(nestedData) {
-    const flattened = {};
-    
-    function flatten(obj, prefix = '') {
-        for (const key in obj) {
-            const newKey = prefix ? \`\${prefix}_\${key}\` : key;
-            if (typeof obj[key] === 'object' && obj[key] !== null) {
-                flatten(obj[key], newKey);
-            } else {
-                flattened[newKey] = obj[key];
-            }
-        }
-    }
-    
-    flatten(nestedData);
-    return flattened;
-}`
-                    }
-                ],
-                6: [ // Form data submission
-                    {
-                        title: 'Form Data Validation',
-                        description: 'Add client-side validation before form submission',
-                        impact: '25% reduction in failed submissions',
-                        priority: 'MEDIUM',
-                        implementation: `// Form validation
-function validateFormData(formData) {
-    const validations = {
-        amount: (val) => val > 0 && val <= 50000,
-        currency: (val) => ['BRL', 'USD', 'EUR'].includes(val),
-        merchantId: (val) => /^\\d{16}$/.test(val)
-    };
-    
-    for (const [field, validator] of Object.entries(validations)) {
-        if (!validator(formData[field])) {
-            throw new Error(\`Invalid \${field}\`);
-        }
-    }
-    
-    return true;
-}`
-                    }
-                ]
-            };
-
-            // Add block-specific optimizations
-            if (blockSpecificOptimizations[block.id]) {
-                optimizations.push(...blockSpecificOptimizations[block.id]);
-            }
-
-            // Dynamic content-based optimizations
-            if (parsedContent) {
-                // 3D Secure specific analysis
-                if (parsedContent.paymentMethodMetaData?.is3DSAuthentication === false) {
-                    optimizations.push({
-                        title: '3D Secure 2.0 Implementation',
-                        description: `Enable 3DS for ${parsedContent.paymentAmount?.currency || 'this'} ${parsedContent.paymentAmount?.value || ''} transaction`,
-                        impact: '30% fraud reduction',
-                        priority: 'HIGH',
-                        implementation: `// 3D Secure 2.0 for Block ${block.id}
-{
-    "paymentMethodMetaData": {
-        "enableAuthenticationUpgrade": true,
-        "is3DSAuthentication": true,
-        "threeDSVersion": "2.0",
-        "challengePreference": "NO_PREFERENCE"
-    }
-}`
-                    });
-                }
-
-                // High-value transaction handling
-                const amount = parseInt(parsedContent.amount || parsedContent.paymentAmount?.value || 0);
-                if (amount > 5000) {
-                    optimizations.push({
-                        title: 'High-Value Transaction Security',
-                        description: `Enhanced security for ${amount} ${parsedContent.currency || parsedContent.paymentAmount?.currency} transaction`,
-                        impact: '70% reduction in high-value fraud',
-                        priority: 'HIGH',
-                        implementation: `// High-value security for ${amount}
-function enhanceHighValueSecurity(transaction) {
-    return {
-        additionalVerification: true,
-        manualReview: transaction.amount > 10000,
-        delayedCapture: true,
-        riskScoring: 'ENHANCED',
-        notificationRequired: true
-    };
-}`
-                    });
-                }
-            }
-
-            // PSP-specific optimizations based on actual usage
-            const pspSpecificOptimizations = {
-                'Alipay': [
-                    {
-                        title: 'Alipay Global Optimization',
-                        description: 'Optimize for international Alipay transactions',
-                        impact: '20% better conversion rates',
-                        priority: 'MEDIUM',
-                        implementation: `// Alipay international optimization
-function optimizeAlipayGlobal(transaction) {
-    return {
-        localCurrency: true,
-        walletIntegration: 'SEAMLESS',
-        crossBorderCompliance: true,
-        fxRateOptimization: true
-    };
-}`
-                    }
-                ],
-                'Stone': [
-                    {
-                        title: 'Stone Brazil Optimization',
-                        description: 'Optimize for Stone\'s Brazilian payment infrastructure',
-                        impact: '35% faster local processing',
-                        priority: 'HIGH',
-                        implementation: `// Stone Brazil optimization
-function optimizeStoneProcessing(transaction) {
-    return {
-        localRouting: true,
-        pixIntegration: transaction.amount < 1000,
-        boletoFallback: true,
-        antifraudLocal: 'SERASA_INTEGRATION'
-    };
-}`
-                    }
-                ],
-                'Mundipagg': [
-                    {
-                        title: 'Mundipagg Split Payment',
-                        description: 'Optimize split payments for marketplace transactions',
-                        impact: '40% faster marketplace settlements',
-                        priority: 'MEDIUM',
-                        implementation: `// Mundipagg split optimization
-function optimizeMundipagSplit(transaction) {
-    return {
-        automaticSplit: true,
-        feeCalculation: 'DYNAMIC',
-        settlementSchedule: 'OPTIMIZED',
-        recipientValidation: 'REAL_TIME'
-    };
-}`
-                    }
-                ]
-            };
-
-            // Add PSP-specific optimizations
-            if (pspSpecificOptimizations[block.psp]) {
-                optimizations.push(...pspSpecificOptimizations[block.psp]);
-            }
-
-            // Direction and type specific optimizations
-            if (block.direction === 'OUTBOUND_REQUEST' && block.type === 'JSON') {
-                optimizations.push({
-                    title: 'Request Deduplication',
-                    description: 'Implement request deduplication to prevent duplicate transactions',
-                    impact: '90% reduction in duplicate requests',
-                    priority: 'HIGH',
-                    implementation: `// Request deduplication for Block ${block.id}
-const requestCache = new Map();
-
-function deduplicateRequest(requestId, payload) {
-    const key = \`\${requestId}_\${JSON.stringify(payload)}\`;
-    
-    if (requestCache.has(key)) {
-        return requestCache.get(key);
-    }
-    
-    const result = processRequest(payload);
-    requestCache.set(key, result);
-    
-    // Clean up after 5 minutes
-    setTimeout(() => requestCache.delete(key), 300000);
-    
-    return result;
-}`
-                });
-            }
-
-            return optimizations;
-        }
-
-        function generateDetailedTransactionOptimizations(block) {
-            const optimizations = analyzeTransactionForOptimizations(block);
-            
-            if (optimizations.length === 0) {
-                return '<p class="text-sm text-yellow-700">No specific optimizations identified for this transaction.</p>';
-            }
-            
-            return optimizations.map(opt => `
-                <div class="border border-yellow-200 rounded-lg p-3 mb-3">
-                    <div class="flex items-start justify-between mb-2">
-                        <h6 class="font-medium text-yellow-900">${opt.title}</h6>
-                        <span class="bg-${opt.priority === 'HIGH' ? 'red' : opt.priority === 'MEDIUM' ? 'yellow' : 'green'}-500 text-white text-xs px-2 py-1 rounded">${opt.priority}</span>
-                    </div>
-                    <p class="text-sm text-yellow-700 mb-2">${opt.description}</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-green-600 font-medium">
-                            <i class="fas fa-chart-line mr-1"></i>${opt.impact}
-                        </span>
-                        <button onclick="showTransactionImplementation('${opt.title}', '${block.id}')" 
-                                class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-                            <i class="fas fa-code mr-1"></i>View Code
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function showTransactionImplementation(title, blockId) {
-            const block = allBlocks.find(b => b.id == blockId);
-            if (!block) return;
-            
-            const optimizations = analyzeTransactionForOptimizations(block);
-            const optimization = optimizations.find(opt => opt.title === title);
-            
-            if (optimization && optimization.implementation) {
-                // Create a modal to show the implementation
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                modal.innerHTML = `
-                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-lg font-semibold">${title} - Implementation</h3>
-                                <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-200">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <p class="text-sm opacity-90 mt-1">Block ${blockId} • ${block.psp} • ${block.direction}</p>
-                        </div>
-                        <div class="p-6">
-                            <div class="mb-4">
-                                <h4 class="font-semibold text-gray-900 mb-2">Optimization Details</h4>
-                                <p class="text-gray-700 mb-2">${optimization.description}</p>
-                                <div class="flex items-center space-x-4">
-                                    <span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
-                                        <i class="fas fa-chart-line mr-1"></i>${optimization.impact}
-                                    </span>
-                                    <span class="bg-${optimization.priority === 'HIGH' ? 'red' : optimization.priority === 'MEDIUM' ? 'yellow' : 'green'}-100 text-${optimization.priority === 'HIGH' ? 'red' : optimization.priority === 'MEDIUM' ? 'yellow' : 'green'}-800 text-sm px-3 py-1 rounded-full">
-                                        ${optimization.priority} Priority
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="bg-gray-100 p-4 rounded-lg">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h4 class="font-semibold text-gray-900">Implementation Code</h4>
-                                    <button onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent)" 
-                                            class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded">
-                                        <i class="fas fa-copy mr-1"></i>Copy
-                                    </button>
-                                </div>
-                                <pre class="text-sm bg-gray-900 text-green-400 p-4 rounded overflow-x-auto">${optimization.implementation}</pre>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-        }
-
-        // Optimization Functions
-        function generateOptimizationRecommendations() {
-            if (!allBlocks || allBlocks.length === 0) {
-                return {
-                    optimizations: [],
-                    pspComparison: [],
-                    roadmap: { immediate: [], shortTerm: [], longTerm: [] }
-                };
-            }
-
-            const analysis = performRealDataAnalysis();
-            const optimizations = [];
-
-            // PSP Routing Optimization
-            const stoneBlocks = allBlocks.filter(b => b.psp === 'Stone');
-            if (stoneBlocks.length > 0) {
-                optimizations.push({
-                    priority: 'CRITICAL',
-                    title: 'PSP Routing Optimization',
-                    description: 'Stone PSP showing higher latency than baseline. Implement intelligent routing.',
-                    impact: '$1,200/month savings',
-                    action: 'Implement Smart Routing',
-                    implementation: `
-// Smart PSP routing algorithm
-function selectOptimalPSP(transaction) {
-    const psps = ['Alipay', 'Mundipagg', 'Stone'];
-    let bestPSP = null;
-    let bestScore = 0;
-    
-    psps.forEach(psp => {
-        const score = calculatePSPScore(psp, transaction);
-        if (score > bestScore) {
-            bestScore = score;
-            bestPSP = psp;
-        }
-    });
-    
-    return bestPSP;
-}
-
-function calculatePSPScore(psp, transaction) {
-    const metrics = getPSPMetrics(psp);
-    return (
-        metrics.successRate * 0.4 +
-        (1 - metrics.latency / 3000) * 0.3 +
-        (1 - metrics.cost / 0.05) * 0.3
-    );
-}`
-                });
-            }
-
-            // Security Enhancement
-            const has3DS = allBlocks.some(b => b.content.includes('is3DSAuthentication":true'));
-            if (!has3DS) {
+            // Check for 3DS authentication
+            if (content.includes('"is3DSAuthentication":false')) {
                 optimizations.push({
                     priority: 'HIGH',
-                    title: 'Security Enhancement',
-                    description: 'Enable 3D Secure 2.0 for enhanced fraud protection.',
-                    impact: '30% fraud reduction',
-                    action: 'Configure 3D Secure',
-                    implementation: `
-// Enable 3D Secure in payment requests
-{
-    "paymentMethod": {
-        "paymentMethodMetaData": {
-            "enableAuthenticationUpgrade": true,
-            "is3DSAuthentication": true,
-            "threeDSVersion": "2.0"
-        }
-    }
-}`
+                    issue: '3DS Authentication Disabled',
+                    suggestion: 'Enable 3DS 2.0 for enhanced fraud protection',
+                    impact: 'Reduced fraud risk',
+                    source: 'Multi-Agent AI Analysis'
                 });
             }
-
-            // Payload Compression
-            const largePayloads = allBlocks.filter(b => b.size && parseInt(b.size) > 2000);
-            if (largePayloads.length > allBlocks.length * 0.1) {
+            
+            // Check for large payloads
+            if (content.length > 2000) {
                 optimizations.push({
                     priority: 'MEDIUM',
-                    title: 'Payload Compression',
-                    description: 'Large payloads detected. Implement gzip compression.',
-                    impact: '25% faster processing',
-                    action: 'Enable Compression',
-                    implementation: `
-// Implement payload compression
-const zlib = require('zlib');
-
-function compressPayload(payload) {
-    return zlib.gzipSync(JSON.stringify(payload));
-}
-
-// Remove unnecessary fields
-function optimizePayload(transaction) {
-    const optimized = { ...transaction };
-    delete optimized.debugInfo;
-    delete optimized.internalMetadata;
-    return optimized;
-}`
+                    issue: 'Large Payload Detected',
+                    suggestion: 'Implement payload compression',
+                    impact: 'Faster processing',
+                    source: 'Transaction Flow Analysis'
                 });
             }
-
-            // PSP Comparison
-            const pspComparison = generatePSPComparison();
-
-            // Implementation Roadmap
-            const roadmap = {
-                immediate: [
-                    'Enable payload compression',
-                    'Implement connection pooling',
-                    'Add card masking validation',
-                    'Configure timeout optimization'
-                ],
-                shortTerm: [
-                    'Smart PSP routing',
-                    '3D Secure 2.0 implementation',
-                    'Real-time monitoring',
-                    'Fraud detection system'
-                ],
-                longTerm: [
-                    'ML-based optimization',
-                    'Predictive analytics',
-                    'Advanced reporting',
-                    'Multi-tenant support'
-                ]
+            
+            // Check for XML format
+            if (content.includes('<?xml')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'XML Format Usage',
+                    suggestion: 'Convert to JSON for better performance',
+                    impact: 'Simplified parsing',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for external API calls
+            if (direction === 'OUTBOUND_REQUEST' && content.includes('https://')) {
+                optimizations.push({
+                    priority: 'MEDIUM',
+                    issue: 'External API Dependency',
+                    suggestion: 'Implement circuit breaker pattern',
+                    impact: 'Better error handling',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for audit logging
+            if (content.includes('auditlog') || content.includes('austreme')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'Synchronous Audit Logging',
+                    suggestion: 'Implement asynchronous audit logging',
+                    impact: 'Reduced latency',
+                    source: 'Transaction Flow Analysis'
+                });
+            }
+            
+            return {
+                stepType: determineStepType(content, direction, apiType),
+                optimizations: optimizations,
+                processingTime: estimateProcessingTime(content, direction),
+                riskLevel: assessRiskLevel(content, psp)
             };
-
-            return { optimizations, pspComparison, roadmap };
         }
 
-        function generatePSPComparison() {
-            const psps = ['Alipay', 'Stone', 'Mundipagg'];
-            const comparison = [];
-
-            psps.forEach(psp => {
-                const pspBlocks = allBlocks.filter(b => b.psp === psp);
-                if (pspBlocks.length === 0) return;
-
-                let status = 'Good';
-                let statusColor = 'blue';
-                let latency = '892ms';
-                let successRate = '98.5%';
-                let cost = '3.0%';
-                let score = 85;
-
-                if (psp === 'Alipay') {
-                    status = 'Optimal';
-                    statusColor = 'green';
-                    latency = '247ms';
-                    successRate = '99.2%';
-                    cost = '2.9%';
-                    score = 92;
-                } else if (psp === 'Stone') {
-                    status = 'Needs Optimization';
-                    statusColor = 'orange';
-                    latency = '1,847ms';
-                    successRate = '97.8%';
-                    cost = '3.4%';
-                    score = 68;
-                }
-
-                comparison.push({
-                    name: psp,
-                    status,
-                    statusColor,
-                    latency,
-                    successRate,
-                    cost,
-                    score
-                });
-            });
-
-            return comparison;
+        // Determine the type of transaction step
+        function determineStepType(content, direction, apiType) {
+            if (content.includes('payments/pay')) return 'Payment Request';
+            if (content.includes('tokenize')) return 'Card Tokenization';
+            if (content.includes('authorize')) return 'Authorization';
+            if (content.includes('capture')) return 'Payment Capture';
+            if (content.includes('auditlog')) return 'Audit Logging';
+            if (content.includes('notify')) return 'Notification';
+            return 'Processing';
         }
 
-        function displayOptimizationRecommendations() {
-            let recommendations = generateOptimizationRecommendations();
-            
-            // If no data is available, show default recommendations
-            if (!allBlocks || allBlocks.length === 0) {
-                recommendations = {
-                    optimizations: [
-                        {
-                            priority: 'CRITICAL',
-                            title: 'PSP Routing Optimization',
-                            description: 'Implement intelligent PSP routing based on real-time performance metrics.',
-                            impact: '$1,200/month savings',
-                            action: 'Implement Smart Routing',
-                            implementation: `// Smart PSP routing algorithm
-function selectOptimalPSP(transaction) {
-    const psps = ['Alipay', 'Mundipagg', 'Stone'];
-    let bestPSP = null;
-    let bestScore = 0;
-    
-    psps.forEach(psp => {
-        const score = calculatePSPScore(psp, transaction);
-        if (score > bestScore) {
-            bestScore = score;
-            bestPSP = psp;
+        // Estimate processing time for the step
+        function estimateProcessingTime(content, direction) {
+            if (direction === 'OUTBOUND_REQUEST') return 'Variable (depends on external API)';
+            if (content.length > 2000) return 'High (large payload)';
+            if (content.includes('encrypt')) return 'Medium (encryption)';
+            return 'Low';
         }
-    });
-    
-    return bestPSP;
-}`
-                        },
-                        {
-                            priority: 'HIGH',
-                            title: 'Security Enhancement',
-                            description: 'Enable 3D Secure 2.0 for enhanced fraud protection.',
-                            impact: '30% fraud reduction',
-                            action: 'Configure 3D Secure',
-                            implementation: `// Enable 3D Secure in payment requests
-{
-    "paymentMethod": {
-        "paymentMethodMetaData": {
-            "enableAuthenticationUpgrade": true,
-            "is3DSAuthentication": true,
-            "threeDSVersion": "2.0"
-        }
-    }
-}`
-                        },
-                        {
-                            priority: 'MEDIUM',
-                            title: 'Payload Compression',
-                            description: 'Implement gzip compression for large payloads.',
-                            impact: '25% faster processing',
-                            action: 'Enable Compression',
-                            implementation: `// Implement payload compression
-const zlib = require('zlib');
 
-function compressPayload(payload) {
-    return zlib.gzipSync(JSON.stringify(payload));
-}`
-                        }
-                    ],
-                    pspComparison: [
-                        {
-                            name: 'Alipay',
-                            status: 'Optimal',
-                            statusColor: 'green',
-                            latency: '247ms',
-                            successRate: '99.2%',
-                            cost: '2.9%',
-                            score: 92
-                        },
-                        {
-                            name: 'Stone',
-                            status: 'Needs Optimization',
-                            statusColor: 'orange',
-                            latency: '1,847ms',
-                            successRate: '97.8%',
-                            cost: '3.4%',
-                            score: 68
-                        },
-                        {
-                            name: 'Mundipagg',
-                            status: 'Good',
-                            statusColor: 'blue',
-                            latency: '892ms',
-                            successRate: '98.5%',
-                            cost: '3.0%',
-                            score: 85
-                        }
-                    ],
-                    roadmap: {
-                        immediate: [
-                            'Enable payload compression',
-                            'Implement connection pooling',
-                            'Add card masking validation',
-                            'Configure timeout optimization'
-                        ],
-                        shortTerm: [
-                            'Smart PSP routing',
-                            '3D Secure 2.0 implementation',
-                            'Real-time monitoring',
-                            'Fraud detection system'
-                        ],
-                        longTerm: [
-                            'ML-based optimization',
-                            'Predictive analytics',
-                            'Advanced reporting',
-                            'Multi-tenant support'
-                        ]
-                    }
-                };
+        // Assess risk level of the step
+        function assessRiskLevel(content, psp) {
+            let risk = 'LOW';
+            if (content.includes('"is3DSAuthentication":false')) risk = 'HIGH';
+            else if (content.includes('card') || content.includes('payment')) risk = 'MEDIUM';
+            return risk;
+        }
+
+        // Display transaction steps analysis
+        function displayTransactionStepsAnalysis() {
+            if (!transactionSteps || transactionSteps.length === 0) {
+                return;
             }
-
-            // Display optimization list
-            const optimizationList = document.getElementById('optimizationList');
-            optimizationList.innerHTML = recommendations.optimizations.map(opt => `
-                <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                    <div class="flex items-start justify-between mb-4">
+            
+            const stepsHtml = transactionSteps.map((step, index) => `
+                <div class="step-card bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center">
-                            <div class="w-3 h-3 bg-${opt.priority === 'CRITICAL' ? 'red' : opt.priority === 'HIGH' ? 'orange' : 'yellow'}-500 rounded-full mr-3"></div>
-                            <h4 class="text-lg font-semibold text-gray-900">${opt.title}</h4>
+                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full mr-3">Step ${step.stepNumber}</span>
+                            <h4 class="font-semibold text-gray-900">${step.analysis.stepType}</h4>
                         </div>
-                        <span class="bg-${opt.priority === 'CRITICAL' ? 'red' : opt.priority === 'HIGH' ? 'orange' : 'yellow'}-500 text-white text-xs px-2 py-1 rounded-full">${opt.priority}</span>
+                        <div class="text-xs text-gray-500">${step.timestamp}</div>
                     </div>
-                    <p class="text-gray-700 mb-4">${opt.description}</p>
-                    <div class="flex items-center justify-between">
-                        <div class="text-green-600 font-semibold">
-                            <i class="fas fa-chart-line mr-1"></i>
-                            ${opt.impact}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Direction:</span>
+                            <div class="text-sm">${step.direction}</div>
                         </div>
-                        <button onclick="showImplementation('${opt.title}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                            ${opt.action}
-                        </button>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">PSP:</span>
+                            <div class="text-sm">${step.psp}</div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Risk Level:</span>
+                            <div class="text-sm">
+                                <span class="px-2 py-1 rounded text-xs ${getRiskLevelClass(step.analysis.riskLevel)}">
+                                    ${step.analysis.riskLevel}
+                                </span>
+                            </div>
+                        </div>
                     </div>
+                    
+                    ${step.analysis.optimizations.length > 0 ? `
+                        <div class="border-t pt-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Optimizations:</h5>
+                            ${step.analysis.optimizations.map(opt => `
+                                <div class="bg-gray-50 p-2 rounded mb-2">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-medium">${opt.issue}</span>
+                                        <span class="text-white text-xs px-2 py-1 rounded ${getPriorityClass(opt.priority)}">${opt.priority}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-600 mb-1">${opt.suggestion}</div>
+                                    <div class="text-xs text-green-600">Impact: ${opt.impact}</div>
+                                    <div class="text-xs text-blue-600">Source: ${opt.source}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div class="text-xs text-green-600 border-t pt-2">✅ No optimizations needed - step is optimal</div>'}
                 </div>
             `).join('');
+            
+            document.getElementById('stepsContainer').innerHTML = stepsHtml;
+            document.getElementById('stepsAnalysis').classList.remove('hidden');
+            document.getElementById('stepsAnalysis').classList.add('fade-in');
+        }
 
-            // Display PSP comparison
-            const pspComparison = document.getElementById('pspComparison');
-            pspComparison.innerHTML = recommendations.pspComparison.map(psp => `
-                <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h4 class="text-lg font-semibold text-gray-900">${psp.name}</h4>
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-${psp.statusColor}-500 rounded-full mr-2"></div>
-                            <span class="text-${psp.statusColor}-600 text-sm">${psp.status}</span>
-                        </div>
+        // Display analysis results summary
+        function displayAnalysisResults() {
+            // PSP API Analysis
+            const pspAnalysis = generatePSPAnalysis();
+            document.getElementById('pspAnalysisResults').innerHTML = pspAnalysis;
+            
+            // Multi-Agent AI Analysis
+            const aiAnalysis = generateAIAnalysis();
+            document.getElementById('aiAnalysisResults').innerHTML = aiAnalysis;
+            
+            // Transaction Flow Analysis
+            const flowAnalysis = generateFlowAnalysis();
+            document.getElementById('flowAnalysisResults').innerHTML = flowAnalysis;
+            
+            document.getElementById('analysisResults').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('fade-in');
+        }
+
+        // Generate PSP API Analysis summary
+        function generatePSPAnalysis() {
+            const psps = [...new Set(transactionSteps.map(step => step.psp))];
+            const apiTypes = [...new Set(transactionSteps.map(step => step.apiType))];
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">PSPs Detected:</span> ${psps.join(', ')}
                     </div>
-                    <div class="space-y-3">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Latency</span>
-                            <span class="font-semibold">${psp.latency}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Success Rate</span>
-                            <span class="font-semibold">${psp.successRate}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Cost</span>
-                            <span class="font-semibold">${psp.cost}</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-${psp.statusColor}-500 h-2 rounded-full" style="width: ${psp.score}%"></div>
-                        </div>
+                    <div class="text-sm">
+                        <span class="font-medium">API Types:</span> ${apiTypes.join(', ')}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Total Steps:</span> ${transactionSteps.length}
                     </div>
                 </div>
-            `).join('');
-
-            // Display roadmap
-            const { immediate, shortTerm, longTerm } = recommendations.roadmap;
-            
-            document.getElementById('immediateItems').innerHTML = immediate.map(item => `
-                <li class="flex items-center text-gray-700">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    ${item}
-                </li>
-            `).join('');
-
-            document.getElementById('shortTermItems').innerHTML = shortTerm.map(item => `
-                <li class="flex items-center text-gray-700">
-                    <i class="fas fa-circle text-gray-400 mr-2"></i>
-                    ${item}
-                </li>
-            `).join('');
-
-            document.getElementById('longTermItems').innerHTML = longTerm.map(item => `
-                <li class="flex items-center text-gray-700">
-                    <i class="fas fa-circle text-gray-400 mr-2"></i>
-                    ${item}
-                </li>
-            `).join('');
+            `;
         }
 
-        function showImplementation(title) {
-            const recommendations = generateOptimizationRecommendations();
-            const optimization = recommendations.optimizations.find(opt => opt.title === title);
+        // Generate AI Analysis summary
+        function generateAIAnalysis() {
+            const highRiskSteps = transactionSteps.filter(step => step.analysis.riskLevel === 'HIGH').length;
+            const securityIssues = transactionSteps.filter(step => 
+                step.analysis.optimizations.some(opt => opt.issue.includes('3DS'))
+            ).length;
             
-            if (optimization && optimization.implementation) {
-                alert(`Implementation for ${title}:\n\n${optimization.implementation}`);
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">High Risk Steps:</span> ${highRiskSteps}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Security Issues:</span> ${securityIssues}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Risk Assessment:</span> ${highRiskSteps > 0 ? 'Needs Attention' : 'Good'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Flow Analysis summary
+        function generateFlowAnalysis() {
+            const totalOptimizations = transactionSteps.reduce((sum, step) => sum + step.analysis.optimizations.length, 0);
+            const avgPayloadSize = transactionSteps.reduce((sum, step) => sum + step.payloadSize, 0) / transactionSteps.length;
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">Optimization Opportunities:</span> ${totalOptimizations}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Avg Payload Size:</span> ${Math.round(avgPayloadSize)} bytes
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Flow Efficiency:</span> ${totalOptimizations < 5 ? 'Good' : 'Needs Improvement'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions for CSS classes
+        function getRiskLevelClass(riskLevel) {
+            switch(riskLevel) {
+                case 'HIGH': return 'bg-red-100 text-red-800';
+                case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+                case 'LOW': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
             }
         }
 
-        // Update the showSection function to handle optimization
-        const originalShowSection = showSection;
-        showSection = function(sectionName) {
-            originalShowSection(sectionName);
-            
-            if (sectionName === 'optimization') {
-                displayOptimizationRecommendations();
+        function getPriorityClass(priority) {
+            switch(priority) {
+                case 'HIGH': return 'bg-red-500';
+                case 'MEDIUM': return 'bg-yellow-500';
+                case 'LOW': return 'bg-blue-500';
+                default: return 'bg-gray-500';
             }
-        };
+        }
+
+        // Navigation function
+        function showSection(sectionName) {
+            // This function can be expanded for multiple sections
+        }
     </script>
 </body>
 </html>
