@@ -736,8 +736,48 @@
                 // Read file content
                 const fileContent = await readFileContent(file);
                 
-                // Parse JSON content
-                const parsedData = JSON.parse(fileContent);
+                // Parse JSON content with better error handling
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(fileContent);
+                } catch (jsonError) {
+                    // If direct JSON parsing fails, try to fix common issues
+                    console.log('Direct JSON parse failed, attempting to fix format...');
+                    
+                    // Try to handle malformed JSON by fixing common issues
+                    let fixedContent = fileContent;
+                    
+                    // Try to parse line by line if it's a JSONL format (each line is a JSON object)
+                    if (fixedContent.includes('\n{')) {
+                        const lines = fixedContent.split('\n').filter(line => line.trim());
+                        parsedData = [];
+                        
+                        for (let line of lines) {
+                            try {
+                                if (line.trim().startsWith('{')) {
+                                    parsedData.push(JSON.parse(line.trim()));
+                                }
+                            } catch (lineError) {
+                                console.log('Skipping malformed line:', line.substring(0, 100) + '...');
+                            }
+                        }
+                        
+                        if (parsedData.length === 0) {
+                            throw new Error('No valid JSON objects found in file');
+                        }
+                    } else {
+                        throw new Error(`JSON Parse error: ${jsonError.message}. Please ensure the file is valid JSON format.`);
+                    }
+                }
+                
+                // Ensure we have an array
+                if (!Array.isArray(parsedData)) {
+                    if (typeof parsedData === 'object' && parsedData !== null) {
+                        parsedData = [parsedData];
+                    } else {
+                        throw new Error('Expected JSON array or object format');
+                    }
+                }
                 
                 // Extract blocks from the parsed data
                 const blocks = extractBlocks(parsedData);
@@ -747,6 +787,7 @@
                     <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
                     <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
                     <p class="text-green-800">✅ Parsing complete - ${blocks.length} content blocks found</p>
+                    <p class="text-blue-800">📊 Processed ${parsedData.length} log entries</p>
                 `;
                 
                 // Store blocks globally
@@ -767,6 +808,7 @@
                 document.getElementById('fileInfo').innerHTML = `
                     <p class="text-red-800"><strong>Error:</strong> Failed to parse file</p>
                     <p class="text-red-800">${error.message}</p>
+                    <p class="text-yellow-800"><strong>Tip:</strong> Ensure your file is valid JSON format (array of objects or JSONL format)</p>
                 `;
             }
         }
