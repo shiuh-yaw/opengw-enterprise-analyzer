@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGW Enterprise PSP Analyzer - Final Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .xml-tag { color: #0066cc; font-weight: bold; }
+        .xml-attr { color: #ff6600; }
+        .xml-value { color: #009900; }
+        .xml-declaration { color: #666; font-style: italic; }
+        .xml-cdata { background-color: #ffe6f2; }
+        .json-key { color: #ff6600; }
+        .json-string { color: #009900; }
+        .json-number { color: #ff6600; }
+        .json-boolean { color: #0066cc; }
+        .json-null { color: #999; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 95%; max-height: 95%; overflow-y: auto; }
+        .debug-info { font-family: monospace; font-size: 12px; background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; white-space: pre-wrap; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+    <div class="flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white min-h-screen p-4">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
+                <p class="text-sm text-gray-400">PSP Analyzer v5.0</p>
+                <p class="text-xs text-gray-500 mt-1">Final Production Version</p>
+            </div>
+            <nav class="space-y-2">
+                <a href="#" onclick="showSection('upload')" class="block p-3 rounded bg-blue-600">📤 Upload & Analyze</a>
+                <a href="#" onclick="toggleDebugMode()" class="block p-3 rounded bg-gray-600 hover:bg-gray-500" id="debug-toggle">🔧 Debug Mode: OFF</a>
+                <a href="#" onclick="runTests()" class="block p-3 rounded bg-green-600 hover:bg-green-500">🧪 Run Tests</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <div id="upload-section">
+                <h2 class="text-3xl font-bold text-white mb-6">Upload & Analyze OpenGW Logs</h2>
+                <div class="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+                    <div class="border-2 border-dashed border-white/30 rounded-lg p-8 text-center">
+                        <div class="text-white/70 mb-4">
+                            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 911 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-2">Upload OpenGW Transaction Log</h3>
+                        <p class="text-white/70 mb-4">Production-ready parser with comprehensive error recovery</p>
+                        <input type="file" id="fileInput" accept=".json,.log,.txt" class="hidden">
+                        <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">Choose File</button>
+                    </div>
+                    
+                    <div id="processing-status" class="mt-4 hidden">
+                        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+                                <span id="status-text">Processing OpenGW log file...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="error-status" class="mt-4 hidden">
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <div class="font-bold">Error: Failed to parse file</div>
+                            <div id="error-text"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="success-status" class="mt-4 hidden">
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            <div class="font-bold">✅ File processed successfully!</div>
+                            <div id="success-text"></div>
+                        </div>
+                    </div>
+
+                    <div id="warning-status" class="mt-4 hidden">
+                        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                            <div class="font-bold">⚠️ Partial Success with Warnings</div>
+                            <div id="warning-text"></div>
+                        </div>
+                    </div>
+
+                    <div id="debug-info" class="mt-4 hidden">
+                        <div class="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded">
+                            <div class="font-bold">🔧 Debug Information</div>
+                            <div id="debug-text" class="debug-info"></div>
+                        </div>
+                    </div>
+
+                    <div id="test-results" class="mt-4 hidden">
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            <div class="font-bold">🧪 Test Results</div>
+                            <div id="test-text" class="debug-info"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="blocks-container" class="mt-8 space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="blockModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-xl font-bold"></h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="flex space-x-2 mb-4">
+                <button onclick="showTab('formatted')" id="formatted-tab" class="px-4 py-2 bg-blue-600 text-white rounded">Formatted</button>
+                <button onclick="showTab('raw')" id="raw-tab" class="px-4 py-2 bg-gray-300 text-gray-700 rounded">Raw</button>
+                <button onclick="showTab('analysis')" id="analysis-tab" class="px-4 py-2 bg-gray-300 text-gray-700 rounded">Analysis</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let globalBlocks = [];
+        let currentBlock = null;
+        let debugMode = false;
+        let parseDebugInfo = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showProcessingStatus('Reading OpenGW log file...');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    processOpenGWLogFile(e.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            const toggle = document.getElementById('debug-toggle');
+            toggle.textContent = debugMode ? '🔧 Debug Mode: ON' : '🔧 Debug Mode: OFF';
+            toggle.className = debugMode ? 'block p-3 rounded bg-green-600' : 'block p-3 rounded bg-gray-600 hover:bg-gray-500';
+            
+            if (debugMode && parseDebugInfo.length > 0) {
+                showDebugInfo(parseDebugInfo.join('\\n'));
+            } else {
+                hideDebugInfo();
+            }
+        }
+
+        function runTests() {
+            showTestResults('Running comprehensive parser tests...');
+            
+            const tests = [
+                {
+                    name: 'Valid JSON Array',
+                    input: '[{"__time__": "123", "content": "test [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test\\"}][MESSAGE_ENVELOPE_EXTRA]"}]',
+                    expectedBlocks: 1
+                },
+                {
+                    name: 'Missing Opening Bracket',
+                    input: '{"__time__": "123", "content": "test [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test\\"}][MESSAGE_ENVELOPE_EXTRA]"}]',
+                    expectedBlocks: 1
+                },
+                {
+                    name: 'Multiple Objects Without Array',
+                    input: '{"__time__": "123", "content": "test1 [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test1\\"}][MESSAGE_ENVELOPE_EXTRA]"},{"__time__": "124", "content": "test2 [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test2\\"}][MESSAGE_ENVELOPE_EXTRA]"}',
+                    expectedBlocks: 2
+                },
+                {
+                    name: 'JSONL Format',
+                    input: '{"__time__": "123", "content": "test1 [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test1\\"}][MESSAGE_ENVELOPE_EXTRA]"}\\n{"__time__": "124", "content": "test2 [MESSAGE_ENVELOPE_CONTENT][{\\"data\\": \\"test2\\"}][MESSAGE_ENVELOPE_EXTRA]"}',
+                    expectedBlocks: 2
+                }
+            ];
+
+            let results = [];
+            let passed = 0;
+            let total = tests.length;
+
+            tests.forEach(test => {
+                try {
+                    const data = parseOpenGWLogAdvanced(test.input);
+                    const blocks = extractTransactionBlocks(data);
+                    
+                    if (blocks.length === test.expectedBlocks) {
+                        results.push(`✅ ${test.name}: PASSED (${blocks.length} blocks)`);
+                        passed++;
+                    } else {
+                        results.push(`❌ ${test.name}: FAILED (expected ${test.expectedBlocks}, got ${blocks.length})`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${test.name}: ERROR - ${error.message}`);
+                }
+            });
+
+            results.push(`\\n📊 Test Summary: ${passed}/${total} tests passed`);
+            showTestResults(results.join('\\n'));
+        }
+
+        function showProcessingStatus(message) {
+            document.getElementById('status-text').textContent = message;
+            document.getElementById('processing-status').classList.remove('hidden');
+            hideOtherStatus();
+        }
+
+        function showError(message, details = '') {
+            document.getElementById('error-text').innerHTML = message + (details ? `<br><pre class="text-xs whitespace-pre-wrap mt-2 bg-red-200 p-2 rounded">${details}</pre>` : '');
+            document.getElementById('error-status').classList.remove('hidden');
+            hideOtherStatus('error');
+        }
+
+        function showSuccess(message) {
+            document.getElementById('success-text').textContent = message;
+            document.getElementById('success-status').classList.remove('hidden');
+            hideOtherStatus('success');
+        }
+
+        function showWarning(message) {
+            document.getElementById('warning-text').textContent = message;
+            document.getElementById('warning-status').classList.remove('hidden');
+            hideOtherStatus('warning');
+        }
+
+        function showDebugInfo(info) {
+            document.getElementById('debug-text').textContent = info;
+            document.getElementById('debug-info').classList.remove('hidden');
+        }
+
+        function hideDebugInfo() {
+            document.getElementById('debug-info').classList.add('hidden');
+        }
+
+        function showTestResults(results) {
+            document.getElementById('test-text').textContent = results;
+            document.getElementById('test-results').classList.remove('hidden');
+        }
+
+        function hideOtherStatus(except = '') {
+            const statuses = ['processing', 'error', 'success', 'warning'];
+            statuses.forEach(status => {
+                if (status !== except) {
+                    document.getElementById(`${status}-status`).classList.add('hidden');
+                }
+            });
+        }
+
+        function processOpenGWLogFile(content) {
+            showProcessingStatus('Analyzing file format and structure...');
+            parseDebugInfo = [];
+            
+            try {
+                let data = parseOpenGWLogAdvanced(content);
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('No valid transaction data found in the log file.');
+                }
+
+                showProcessingStatus('Extracting transaction blocks from OpenGW logs...');
+                setTimeout(() => {
+                    const blocks = extractTransactionBlocks(data);
+                    processResults(data, blocks);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Processing error:', error);
+                showError(error.message, error.details || '');
+                if (debugMode) {
+                    showDebugInfo(parseDebugInfo.join('\\n'));
+                }
+            }
+        }
+
+        function parseOpenGWLogAdvanced(content) {
+            const originalLength = content.length;
+            parseDebugInfo.push(`📊 File Analysis:`);
+            parseDebugInfo.push(`  - Original size: ${originalLength} characters`);
+            
+            let fixedContent = content.trim();
+            parseDebugInfo.push(`  - After trim: ${fixedContent.length} characters`);
+            
+            // Strategy 1: Direct JSON parse
+            try {
+                const parsed = JSON.parse(fixedContent);
+                parseDebugInfo.push(`✅ Direct JSON parse successful`);
+                return Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+                parseDebugInfo.push(`❌ Direct JSON parse failed: ${e.message}`);
+            }
+
+            // Strategy 2: Fix missing opening bracket
+            if (!fixedContent.startsWith('[') && (fixedContent.startsWith('{') || fixedContent.includes('__time__'))) {
+                try {
+                    let fixed = '[' + fixedContent;
+                    if (!fixed.endsWith(']')) {
+                        fixed = fixed + ']';
+                    }
+                    const parsed = JSON.parse(fixed);
+                    parseDebugInfo.push(`✅ Fixed missing brackets: ${parsed.length} objects`);
+                    return parsed;
+                } catch (e) {
+                    parseDebugInfo.push(`❌ Bracket fix failed: ${e.message}`);
+                }
+            }
+
+            // Strategy 3: Handle multiple objects without array structure
+            if (!fixedContent.startsWith('[') && fixedContent.includes('},{')) {
+                try {
+                    const objects = fixedContent.split('},{');
+                    for (let i = 0; i < objects.length; i++) {
+                        let obj = objects[i];
+                        if (i === 0 && !obj.startsWith('{')) obj = '{' + obj;
+                        if (i === objects.length - 1 && !obj.endsWith('}')) obj = obj + '}';
+                        if (i > 0 && !obj.startsWith('{')) obj = '{' + obj;
+                        if (i < objects.length - 1 && !obj.endsWith('}')) obj = obj + '}';
+                        objects[i] = obj;
+                    }
+                    const fixed = '[' + objects.join(',') + ']';
+                    const parsed = JSON.parse(fixed);
+                    parseDebugInfo.push(`✅ Fixed multiple objects: ${parsed.length} objects`);
+                    return parsed;
+                } catch (e) {
+                    parseDebugInfo.push(`❌ Multiple objects fix failed: ${e.message}`);
+                }
+            }
+
+            // Strategy 4: JSONL format (line by line)
+            if (fixedContent.includes('\\n')) {
+                try {
+                    const lines = fixedContent.split('\\n').filter(line => line.trim());
+                    const validLines = [];
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        let line = lines[i].trim();
+                        line = line.replace(/,\\s*$/, ''); // Remove trailing comma
+                        line = line.replace(/^[\\]\\s*,?\\s*/, ''); // Remove leading ]
+                        line = line.replace(/\\]\\s*$/, ''); // Remove trailing ]
+                        
+                        if (line && (line.startsWith('{') || line.includes('__time__'))) {
+                            try {
+                                const parsed = JSON.parse(line);
+                                validLines.push(parsed);
+                            } catch (e) {
+                                // Skip invalid lines
+                            }
+                        }
+                    }
+                    
+                    if (validLines.length > 0) {
+                        parseDebugInfo.push(`✅ JSONL parsing successful: ${validLines.length} objects`);
+                        return validLines;
+                    }
+                } catch (e) {
+                    parseDebugInfo.push(`❌ JSONL parsing failed: ${e.message}`);
+                }
+            }
+
+            throw new Error('All parsing strategies failed. File may be severely corrupted.');
+        }
+
+        function extractTransactionBlocks(data) {
+            const blocks = [];
+            let skippedEntries = 0;
+            
+            data.forEach((entry, index) => {
+                if (entry.content) {
+                    const contentMatch = entry.content.match(/\\[MESSAGE_ENVELOPE_CONTENT\\]\\[(.*?)\\](?:\\[MESSAGE_ENVELOPE_EXTRA\\]|$)/s);
+                    if (contentMatch) {
+                        const content = contentMatch[1];
+                        let type = 'TEXT';
+                        let psp = 'Unknown';
+                        let direction = 'UNKNOWN';
+                        
+                        // Determine content type
+                        if (content.includes('<?xml') || content.includes('<M ') || content.includes('<F ')) {
+                            type = 'XML';
+                        } else if (content.startsWith('{') || content.startsWith('[')) {
+                            type = 'JSON';
+                        }
+                        
+                        // Determine PSP
+                        if (content.includes('alipay') || content.includes('ALIPAY') || content.includes('ALIPW') || entry.content.includes('ALIPW')) {
+                            psp = 'Alipay';
+                        } else if (content.includes('stone') || content.includes('STONE')) {
+                            psp = 'Stone';
+                        } else if (content.includes('mundipagg') || content.includes('MUNDIPAGG')) {
+                            psp = 'Mundipagg';
+                        } else if (content.includes('mastercard') || content.includes('MASTERCARD')) {
+                            psp = 'Mastercard';
+                        }
+                        
+                        // Determine direction
+                        if (entry.content.includes('INBOUND_RESPONSE')) {
+                            direction = 'INBOUND_RESPONSE';
+                        } else if (entry.content.includes('INBOUND_REQUEST')) {
+                            direction = 'INBOUND_REQUEST';
+                        } else if (entry.content.includes('OUTBOUND_REQUEST')) {
+                            direction = 'OUTBOUND_REQUEST';
+                        } else if (entry.content.includes('OUTBOUND_RESPONSE')) {
+                            direction = 'OUTBOUND_RESPONSE';
+                        }
+                        
+                        // Determine API type
+                        let apiType = 'Unknown';
+                        if (entry.content.includes('OPENAPIv2')) {
+                            apiType = 'OPENAPIv2';
+                        } else if (entry.content.includes('INNER_API')) {
+                            apiType = 'INNER_API';
+                        } else if (entry.content.includes('INNER_NOTIFY')) {
+                            apiType = 'INNER_NOTIFY';
+                        }
+                        
+                        blocks.push({
+                            id: index + 1,
+                            content: content,
+                            type: type,
+                            psp: psp,
+                            size: content.length,
+                            direction: direction,
+                            apiType: apiType,
+                            timestamp: entry.__time__ || 'Unknown',
+                            traceId: entry.traceId || 'N/A'
+                        });
+                    } else {
+                        skippedEntries++;
+                    }
+                } else {
+                    skippedEntries++;
+                }
+            });
+            
+            return blocks;
+        }
+
+        function processResults(data, blocks) {
+            globalBlocks = blocks;
+            
+            if (blocks.length === 0) {
+                showError('No transaction blocks found in the uploaded file. Please check if the file contains OpenGW message logs.');
+                return;
+            }
+            
+            showSuccess(`Successfully processed ${data.length} log entries and found ${blocks.length} transaction blocks.`);
+            
+            if (debugMode) {
+                showDebugInfo(parseDebugInfo.join('\\n'));
+            }
+            
+            displayBlocks(blocks);
+        }
+
+        function displayBlocks(blocks) {
+            const container = document.getElementById('blocks-container');
+            container.innerHTML = '';
+            
+            // Summary section
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-4';
+            summaryDiv.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-2">Analysis Summary</h3>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${blocks.length}</div>
+                        <div class="text-white/70">Transaction Blocks</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${new Set(blocks.map(b => b.psp)).size}</div>
+                        <div class="text-white/70">PSPs Detected</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${blocks.reduce((sum, b) => sum + b.size, 0)}</div>
+                        <div class="text-white/70">Total Bytes</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-white">${blocks.filter(b => b.type === 'JSON').length}</div>
+                        <div class="text-white/70">JSON Blocks</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(summaryDiv);
+            
+            // Individual blocks
+            blocks.forEach(block => {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-all';
+                blockDiv.onclick = () => showBlockDetails(block);
+                
+                const typeColor = block.type === 'JSON' ? 'bg-green-500' : block.type === 'XML' ? 'bg-orange-500' : 'bg-blue-500';
+                const directionColor = block.direction.includes('INBOUND') ? 'bg-purple-500' : block.direction.includes('OUTBOUND') ? 'bg-pink-500' : 'bg-gray-500';
+                
+                blockDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl font-bold text-white">Block ${block.id}</div>
+                            <span class="${typeColor} text-white px-3 py-1 rounded-full text-sm font-medium">${block.type}</span>
+                            <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">${block.psp}</span>
+                            <span class="${directionColor} text-white px-3 py-1 rounded-full text-sm">${block.direction}</span>
+                        </div>
+                        <div class="text-white/70 text-sm">${block.size} bytes</div>
+                    </div>
+                    <div class="mt-2 text-white/80">Trace ID: ${block.traceId}</div>
+                    <div class="mt-2 text-blue-300 text-sm">View Details →</div>
+                `;
+                
+                container.appendChild(blockDiv);
+            });
+        }
+
+        function showBlockDetails(block) {
+            currentBlock = block;
+            document.getElementById('modalTitle').textContent = `Block ${block.id} Details`;
+            document.getElementById('blockModal').classList.add('show');
+            showTab('formatted');
+        }
+
+        function showTab(tabName) {
+            const modalContent = document.getElementById('modalContent');
+            const tabs = ['formatted', 'raw', 'analysis'];
+            tabs.forEach(tab => document.getElementById(`${tab}-tab`).classList.replace('bg-blue-600', 'bg-gray-300'));
+            tabs.forEach(tab => document.getElementById(`${tab}-tab`).classList.replace('text-white', 'text-gray-700'));
+            document.getElementById(`${tabName}-tab`).classList.replace('bg-gray-300', 'bg-blue-600');
+            document.getElementById(`${tabName}-tab`).classList.replace('text-gray-700', 'text-white');
+
+            if (tabName === 'formatted') {
+                const formattedContent = formatContent(currentBlock.content, currentBlock.type);
+                const highlightedContent = highlightSyntax(formattedContent, currentBlock.type);
+                modalContent.innerHTML = `<pre class="text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border max-h-96 overflow-y-auto">${highlightedContent}</pre>`;
+            } else if (tabName === 'raw') {
+                modalContent.innerHTML = `<pre class="text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border max-h-96 overflow-y-auto">${escapeHtml(currentBlock.content)}</pre>`;
+            } else if (tabName === 'analysis') {
+                modalContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-2">🔍 Transaction Analysis:</h4>
+                            <div class="space-y-2">${generateAnalysis(currentBlock)}</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-2">🚀 Optimization Recommendations:</h4>
+                            <div class="space-y-2">${generateOptimizationRecommendations(currentBlock)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function generateAnalysis(block) {
+            const analysis = [];
+            const content = block.content.toLowerCase();
+
+            if (content.includes('risk_reject')) {
+                analysis.push('<div class="text-red-600">⚠️ <strong>Risk Rejection:</strong> Transaction rejected due to security/fraud concerns</div>');
+            }
+            
+            if (content.includes('"resultstatus":"s"') || content.includes('"resultcode":"success"')) {
+                analysis.push('<div class="text-green-600">✅ <strong>Successful Transaction:</strong> Payment processed successfully</div>');
+            }
+            
+            if (content.includes('"resultstatus":"f"') || content.includes('failed')) {
+                analysis.push('<div class="text-red-600">❌ <strong>Failed Transaction:</strong> Payment processing failed</div>');
+            }
+            
+            const amountMatch = block.content.match(/"value":"(\\d+)"/);
+            const currencyMatch = block.content.match(/"currency":"([A-Z]{3})"/);
+            if (amountMatch && currencyMatch) {
+                analysis.push(`<div class="text-green-600">💰 <strong>Transaction Amount:</strong> ${amountMatch[1]} ${currencyMatch[1]}</div>`);
+            }
+            
+            if (content.includes('mastercard') || content.includes('visa')) {
+                const cardBrand = content.includes('mastercard') ? 'Mastercard' : 'Visa';
+                analysis.push(`<div class="text-blue-600">💳 <strong>Card Brand:</strong> ${cardBrand} payment processing</div>`);
+            }
+            
+            if (content.includes('threeds') || content.includes('3ds')) {
+                if (content.includes('"challenged":false')) {
+                    analysis.push('<div class="text-orange-600">🔒 <strong>3D Secure:</strong> Available but not challenged (potential security enhancement opportunity)</div>');
+                } else if (content.includes('"challenged":true')) {
+                    analysis.push('<div class="text-green-600">🔒 <strong>3D Secure:</strong> Successfully challenged for enhanced security</div>');
+                }
+            }
+            
+            if (block.direction === 'INBOUND_RESPONSE') {
+                analysis.push('<div class="text-purple-600">📥 <strong>Inbound Response:</strong> Response received from payment service provider</div>');
+            } else if (block.direction === 'OUTBOUND_REQUEST') {
+                analysis.push('<div class="text-pink-600">📤 <strong>Outbound Request:</strong> Request sent to payment service provider</div>');
+            }
+            
+            if (block.psp === 'Alipay') {
+                analysis.push('<div class="text-blue-600">🌏 <strong>Alipay Processing:</strong> International payment gateway for global markets</div>');
+            }
+            
+            if (analysis.length === 0) {
+                analysis.push('<div class="text-gray-600">ℹ️ Standard OpenGW transaction processing block</div>');
+            }
+            
+            return analysis.join('');
+        }
+
+        function generateOptimizationRecommendations(block) {
+            const recommendations = [];
+            const content = block.content.toLowerCase();
+            const originalContent = block.content;
+            
+            // Only suggest 3DS if transaction actually involves card processing and 3DS is available but not used
+            if ((content.includes('card') || content.includes('credit') || content.includes('visa') || content.includes('mastercard')) && 
+                content.includes('threeds') && content.includes('"challenged":false')) {
+                recommendations.push('<div class="text-orange-600"><strong>🔒 3D Secure Enhancement:</strong> Enable 3D Secure challenges for improved fraud protection (30-50% fraud reduction)</div>');
+            }
+            
+            // Risk rejection analysis
+            if (content.includes('risk_reject') || content.includes('"resultstatus":"f"')) {
+                recommendations.push('<div class="text-red-600"><strong>🛡️ Risk Management:</strong> Review and optimize risk rules to reduce false positives while maintaining security</div>');
+            }
+            
+            // Payload size optimization - only for very large payloads
+            if (block.size > 8000) {
+                recommendations.push('<div class="text-blue-600"><strong>📦 Payload Optimization:</strong> Large payload detected (' + Math.round(block.size/1024) + 'KB) - consider compression or data optimization</div>');
+            }
+            
+            // PSP-specific optimizations based on actual PSP usage
+            if (block.direction === 'OUTBOUND_REQUEST' && block.psp === 'Alipay' && content.includes('timeout')) {
+                recommendations.push('<div class="text-green-600"><strong>🚀 Alipay Optimization:</strong> Consider implementing connection pooling for better performance</div>');
+            }
+            
+            // API migration suggestion only if using old XML format with newer API
+            if (block.apiType === 'OPENAPIv2' && block.type === 'XML' && content.includes('version')) {
+                recommendations.push('<div class="text-purple-600"><strong>🔄 API Migration:</strong> Consider migrating from XML to JSON for better performance and smaller payloads</div>');
+            }
+            
+            // Webhook optimization only for actual webhook notifications
+            if (content.includes('notify') && block.direction === 'INBOUND_REQUEST' && content.includes('webhook')) {
+                recommendations.push('<div class="text-yellow-600"><strong>⚡ Webhook Optimization:</strong> Implement async processing for webhook notifications to improve response times</div>');
+            }
+            
+            // Currency-specific optimizations based on actual transaction currency
+            const currencyMatch = originalContent.match(/"currency":"([A-Z]{3})"/);
+            if (currencyMatch) {
+                const currency = currencyMatch[1];
+                if (currency === 'BRL' && content.includes('brazil')) {
+                    recommendations.push('<div class="text-green-600"><strong>🇧🇷 Brazilian Market:</strong> Consider implementing PIX payment method for faster, cheaper transactions</div>');
+                } else if (currency === 'EUR' && content.includes('europe')) {
+                    recommendations.push('<div class="text-blue-600"><strong>🇪🇺 European Market:</strong> Ensure PSD2 SCA compliance for improved authorization rates</div>');
+                } else if (currency === 'USD' && content.includes('united states')) {
+                    recommendations.push('<div class="text-red-600"><strong>🇺🇸 US Market:</strong> Consider implementing ACH payments for lower processing costs</div>');
+                }
+            }
+            
+            // Error-specific recommendations
+            if (content.includes('timeout') || content.includes('connection')) {
+                recommendations.push('<div class="text-orange-600"><strong>⏱️ Connection Optimization:</strong> Implement retry logic with exponential backoff for better reliability</div>');
+            }
+            
+            // Performance recommendations based on actual response times
+            const timeMatch = originalContent.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})/);
+            if (timeMatch && block.direction === 'OUTBOUND_RESPONSE') {
+                recommendations.push('<div class="text-blue-600"><strong>⚡ Performance Monitoring:</strong> Track response times to identify optimization opportunities</div>');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('<div class="text-gray-600">✨ No specific optimizations identified - transaction appears well-optimized</div>');
+            }
+            
+            return recommendations.join('');
+        }
+
+        function closeModal() {
+            document.getElementById('blockModal').classList.remove('show');
+        }
+
+        function formatContent(content, type) {
+            try {
+                if (type === 'JSON') {
+                    const parsed = JSON.parse(content);
+                    return JSON.stringify(parsed, null, 2);
+                } else if (type === 'XML') {
+                    return content
+                        .replace(/></g, '>\\n<')
+                        .split('\\n')
+                        .map((line, index) => {
+                            const depth = Math.max(0, (line.match(/</g) || []).length - (line.match(/<\//g) || []).length);
+                            return '  '.repeat(depth) + line.trim();
+                        })
+                        .join('\\n');
+                }
+                return content;
+            } catch (error) {
+                return content;
+            }
+        }
+
+        function highlightSyntax(content, type) {
+            if (type === 'JSON') {
+                return content
+                    .replace(/("[\w\d_-]+")(\s*:)/g, '<span class="json-key">$1</span>$2')
+                    .replace(/:\s*(".*?")/g, ': <span class="json-string">$1</span>')
+                    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+                    .replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>')
+                    .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
+            } else if (type === 'XML') {
+                const escaped = escapeHtml(content);
+                return escaped
+                    .replace(/(&lt;\?xml[^&]*\?&gt;)/g, '<span class="xml-declaration">$1</span>')
+                    .replace(/(&lt;!\[CDATA\[)/g, '<span class="xml-cdata">$1')
+                    .replace(/(\]\]&gt;)/g, '$1</span>')
+                    .replace(/(&lt;\/?\w+)/g, '<span class="xml-tag">$1</span>')
+                    .replace(/(&gt;)/g, '<span class="xml-tag">$1</span>')
+                    .replace(/(\w+)=(".*?")/g, '<span class="xml-attr">$1</span>=<span class="xml-value">$2</span>');
+            }
+            return escapeHtml(content);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showSection(section) {
+            // Simple section switching
+        }
+    </script>
+</body>
+</html>
