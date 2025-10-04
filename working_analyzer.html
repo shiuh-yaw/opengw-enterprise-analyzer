@@ -1318,7 +1318,35 @@
             try {
                 if (type === 'JSON') {
                     const parsed = JSON.parse(content);
-                    return JSON.stringify(parsed, null, 2);
+                    
+                    // Check for nested JSON strings and format them too
+                    function formatNestedJson(obj) {
+                        if (typeof obj === 'string') {
+                            // Try to parse as JSON if it looks like JSON
+                            if ((obj.startsWith('{') && obj.endsWith('}')) || 
+                                (obj.startsWith('[') && obj.endsWith(']'))) {
+                                try {
+                                    const nestedParsed = JSON.parse(obj);
+                                    return formatNestedJson(nestedParsed); // Recursively format
+                                } catch (e) {
+                                    return obj; // Return original if not valid JSON
+                                }
+                            }
+                            return obj;
+                        } else if (Array.isArray(obj)) {
+                            return obj.map(formatNestedJson);
+                        } else if (obj !== null && typeof obj === 'object') {
+                            const formatted = {};
+                            for (const [key, value] of Object.entries(obj)) {
+                                formatted[key] = formatNestedJson(value);
+                            }
+                            return formatted;
+                        }
+                        return obj;
+                    }
+                    
+                    const formattedWithNested = formatNestedJson(parsed);
+                    return JSON.stringify(formattedWithNested, null, 2);
                 } else if (type === 'XML') {
                     // Enhanced XML formatting with proper indentation
                     let formatted = content;
