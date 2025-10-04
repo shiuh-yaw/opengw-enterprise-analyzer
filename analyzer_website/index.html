@@ -736,37 +736,64 @@
                 // Read file content
                 const fileContent = await readFileContent(file);
                 
-                // Parse JSON content with better error handling
+                // Parse JSON content with enhanced error handling
                 let parsedData;
                 try {
-                    parsedData = JSON.parse(fileContent);
-                } catch (jsonError) {
-                    // If direct JSON parsing fails, try to fix common issues
-                    console.log('Direct JSON parse failed, attempting to fix format...');
+                    // First, let's validate the JSON structure
+                    console.log('File content length:', fileContent.length);
+                    console.log('First 100 chars:', fileContent.substring(0, 100));
+                    console.log('Last 100 chars:', fileContent.substring(fileContent.length - 100));
                     
-                    // Try to handle malformed JSON by fixing common issues
+                    parsedData = JSON.parse(fileContent);
+                    console.log('✅ JSON parsed successfully!', parsedData.length, 'entries found');
+                    
+                } catch (jsonError) {
+                    console.error('JSON parsing failed:', jsonError);
+                    
+                    // Try to identify the exact location of the error
+                    const errorMatch = jsonError.message.match(/position (\d+)/);
+                    if (errorMatch) {
+                        const position = parseInt(errorMatch[1]);
+                        const context = fileContent.substring(Math.max(0, position - 50), position + 50);
+                        console.log('Error context around position', position, ':', context);
+                    }
+                    
+                    // Try to fix common JSON issues
                     let fixedContent = fileContent;
                     
-                    // Try to parse line by line if it's a JSONL format (each line is a JSON object)
+                    // Remove any trailing commas before closing brackets
+                    fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
+                    
+                    // Try to parse line by line if it's a JSONL format
                     if (fixedContent.includes('\n{')) {
+                        console.log('Attempting JSONL parsing...');
                         const lines = fixedContent.split('\n').filter(line => line.trim());
                         parsedData = [];
                         
-                        for (let line of lines) {
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
                             try {
-                                if (line.trim().startsWith('{')) {
-                                    parsedData.push(JSON.parse(line.trim()));
+                                if (line.startsWith('{')) {
+                                    parsedData.push(JSON.parse(line));
                                 }
                             } catch (lineError) {
-                                console.log('Skipping malformed line:', line.substring(0, 100) + '...');
+                                console.log(`Skipping malformed line ${i + 1}:`, line.substring(0, 100) + '...');
+                                console.log('Line error:', lineError.message);
                             }
                         }
                         
                         if (parsedData.length === 0) {
                             throw new Error('No valid JSON objects found in file');
                         }
+                        console.log('✅ JSONL parsing successful!', parsedData.length, 'entries found');
                     } else {
-                        throw new Error(`JSON Parse error: ${jsonError.message}. Please ensure the file is valid JSON format.`);
+                        // Try parsing the fixed content
+                        try {
+                            parsedData = JSON.parse(fixedContent);
+                            console.log('✅ Fixed JSON parsing successful!');
+                        } catch (secondError) {
+                            throw new Error(`JSON Parse error: ${jsonError.message}. File appears to be malformed. Please check the JSON structure.`);
+                        }
                     }
                 }
                 
@@ -813,13 +840,31 @@
             }
         }
 
-        // Read file content as text
+        // Read file content as text with better encoding handling
         function readFileContent(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
+                reader.onload = e => {
+                    try {
+                        let content = e.target.result;
+                        
+                        // Clean up any potential encoding issues
+                        content = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                        
+                        // Remove any BOM (Byte Order Mark) if present
+                        if (content.charCodeAt(0) === 0xFEFF) {
+                            content = content.slice(1);
+                        }
+                        
+                        resolve(content);
+                    } catch (error) {
+                        reject(new Error('Failed to process file content: ' + error.message));
+                    }
+                };
                 reader.onerror = e => reject(new Error('Failed to read file'));
-                reader.readAsText(file);
+                
+                // Try reading as UTF-8 first
+                reader.readAsText(file, 'UTF-8');
             });
         }
 
