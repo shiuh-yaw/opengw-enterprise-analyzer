@@ -113,12 +113,21 @@
         }
         .syntax-highlight .xml-tag {
             color: #0066cc;
+            font-weight: bold;
         }
         .syntax-highlight .xml-attr {
             color: #cc6600;
         }
         .syntax-highlight .xml-value {
             color: #009900;
+        }
+        .syntax-highlight .xml-declaration {
+            color: #666666;
+            font-style: italic;
+        }
+        .syntax-highlight .xml-cdata {
+            color: #cc0066;
+            background-color: #f5f5f5;
         }
         .content-tabs {
             border-bottom: 1px solid #e2e8f0;
@@ -1751,8 +1760,16 @@
         }
 
         function highlightXML(xmlString) {
-            return xmlString
+            // First escape HTML to prevent XSS and ensure proper display
+            const escaped = escapeHtml(xmlString);
+            
+            // Then apply syntax highlighting to the escaped content
+            return escaped
+                .replace(/(&lt;\?xml[^&]*\?&gt;)/g, '<span class="xml-declaration">$1</span>')
+                .replace(/(&lt;!\[CDATA\[)/g, '<span class="xml-cdata">$1')
+                .replace(/(\]\]&gt;)/g, '$1</span>')
                 .replace(/(&lt;\/?[\w\d-]+)/g, '<span class="xml-tag">$1</span>')
+                .replace(/(&gt;)/g, '<span class="xml-tag">$1</span>')
                 .replace(/([\w\d-]+)=(".*?")/g, '<span class="xml-attr">$1</span>=<span class="xml-value">$2</span>');
         }
 
