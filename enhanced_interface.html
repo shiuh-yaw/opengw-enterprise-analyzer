@@ -1847,11 +1847,20 @@
         }
 
         function highlightXML(xmlString) {
-            // First escape HTML to prevent XSS and ensure proper display
-            const escaped = escapeHtml(xmlString);
+            // Check if the content is already HTML-escaped
+            const isEscaped = xmlString.includes('&lt;') || xmlString.includes('&gt;');
             
-            // Then apply syntax highlighting to the escaped content
-            return escaped
+            let content;
+            if (isEscaped) {
+                // Content is already escaped, use as-is
+                content = xmlString;
+            } else {
+                // Content is raw XML, escape it first
+                content = escapeHtml(xmlString);
+            }
+            
+            // Apply syntax highlighting to the escaped content
+            return content
                 .replace(/(&lt;\?xml[^&]*\?&gt;)/g, '<span class="xml-declaration">$1</span>')
                 .replace(/(&lt;!\[CDATA\[)/g, '<span class="xml-cdata">$1')
                 .replace(/(\]\]&gt;)/g, '$1</span>')
