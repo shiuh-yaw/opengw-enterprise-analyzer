@@ -1317,15 +1317,47 @@
         function formatContent(content, type) {
             try {
                 if (type === 'JSON') {
-                    const parsed = JSON.parse(content);
+                    // Handle both direct JSON and escaped JSON strings
+                    let jsonContent = content;
+                    
+                    // If content is a string that contains escaped JSON, try to parse it
+                    if (typeof content === 'string' && content.includes('\\"')) {
+                        try {
+                            // Try to unescape the JSON
+                            jsonContent = content.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                        } catch (e) {
+                            // If unescaping fails, use original content
+                        }
+                    }
+                    
+                    const parsed = JSON.parse(jsonContent);
                     return JSON.stringify(parsed, null, 2);
                 } else if (type === 'XML') {
                     // Basic XML formatting
-                    return content.replace(/></g, '>\n<');
+                    return content.replace(/></g, '>\n<').replace(/^\s*</gm, '<');
                 } else {
+                    // For other types, try to format as JSON if it looks like JSON
+                    if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(content);
+                            return JSON.stringify(parsed, null, 2);
+                        } catch (e) {
+                            return content;
+                        }
+                    }
                     return content;
                 }
             } catch (error) {
+                console.log('Format error:', error);
+                // If JSON parsing fails, return the original content with basic formatting
+                if (content.includes('{') && content.includes('}')) {
+                    // Try to add basic indentation for readability
+                    return content
+                        .replace(/,/g, ',\n  ')
+                        .replace(/{/g, '{\n  ')
+                        .replace(/}/g, '\n}')
+                        .replace(/\n\s*\n/g, '\n');
+                }
                 return content;
             }
         }
