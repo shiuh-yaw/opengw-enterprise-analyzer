@@ -1357,6 +1357,11 @@
                     const formattedWithNested = formatNestedJson(parsed);
                     return JSON.stringify(formattedWithNested, null, 2);
                 } else if (type === 'XML') {
+                    // Check if this is mixed XML/JSON content (like Block #2)
+                    if (content.includes('<![CDATA[{') && content.includes('}]]>')) {
+                        return formatMixedXmlJsonContent(content);
+                    }
+                    
                     // Enhanced XML formatting with proper indentation
                     let formatted = content;
                     
@@ -1395,6 +1400,84 @@
                     return content;
                 }
             } catch (error) {
+                return content;
+            }
+        }
+
+        function formatMixedXmlJsonContent(content) {
+            try {
+                let formatted = content;
+                
+                // First, extract and format JSON from CDATA sections
+                const cdataRegex = /<!\[CDATA\[(.*?)\]\]>/gs;
+                formatted = formatted.replace(cdataRegex, (match, jsonContent) => {
+                    try {
+                        // Parse and format the JSON
+                        const parsed = JSON.parse(jsonContent);
+                        const formattedJson = JSON.stringify(parsed, null, 4); // 4 spaces for nested indentation
+                        
+                        // Return formatted CDATA with proper indentation
+                        const indentedJson = formattedJson.split('\n').map(line => 
+                            line ? '    ' + line : line // Add 4 spaces for CDATA content
+                        ).join('\n');
+                        
+                        return `<![CDATA[\n${indentedJson}\n]]>`;
+                    } catch (e) {
+                        // If JSON parsing fails, return original CDATA
+                        return match;
+                    }
+                });
+                
+                // Then format the XML structure
+                // Add line breaks between tags
+                formatted = formatted.replace(/></g, '>\n<');
+                
+                // Add proper indentation for XML structure
+                const lines = formatted.split('\n');
+                let indentLevel = 0;
+                const indentedLines = [];
+                let insideCDATA = false;
+                
+                for (let line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+                    
+                    // Check if we're entering or leaving CDATA
+                    if (trimmedLine.includes('<![CDATA[')) {
+                        insideCDATA = true;
+                    }
+                    if (trimmedLine.includes(']]>')) {
+                        insideCDATA = false;
+                    }
+                    
+                    // Don't modify indentation inside CDATA sections
+                    if (insideCDATA && !trimmedLine.includes('<![CDATA[') && !trimmedLine.includes(']]>')) {
+                        indentedLines.push(line); // Keep original indentation for JSON
+                        continue;
+                    }
+                    
+                    // Decrease indent for closing tags
+                    if (trimmedLine.startsWith('</')) {
+                        indentLevel = Math.max(0, indentLevel - 1);
+                    }
+                    
+                    // Add indentation for XML tags
+                    const indent = '  '.repeat(indentLevel);
+                    indentedLines.push(indent + trimmedLine);
+                    
+                    // Increase indent for opening tags (but not self-closing or closing tags)
+                    if (trimmedLine.startsWith('<') && 
+                        !trimmedLine.startsWith('</') && 
+                        !trimmedLine.endsWith('/>') &&
+                        !trimmedLine.includes('<?') &&
+                        !trimmedLine.includes('<![CDATA[')) {
+                        indentLevel++;
+                    }
+                }
+                
+                return indentedLines.join('\n');
+            } catch (error) {
+                console.error('Error formatting mixed XML/JSON content:', error);
                 return content;
             }
         }
