@@ -683,40 +683,34 @@
                     });
                 }
 
-                // Extract escaped JSON strings - enhanced detection with automatic JSON conversion
-                if (this.detectEscapedJson(content)) {
+                // Extract escaped JSON strings
+                if (this.detectContentType(content) === 'ESCAPED_JSON') {
                     try {
                         const unescapedContent = this.unescapeJsonString(content);
-                        if (unescapedContent !== content) {
-                            // Try to parse the unescaped content
-                            const parsed = this.smartUnescapeAndParse(unescapedContent);
-                            // Always convert ESCAPED_JSON to standard JSON format
-                            payloads.push({
-                                type: 'JSON', // Convert ESCAPED_JSON to JSON for consistency
-                                index: 1,
-                                content: JSON.stringify(parsed, null, 2), // Use formatted JSON as content
-                                parsed: {
-                                    type: 'JSON',
-                                    formatted: JSON.stringify(parsed, null, 2),
-                                    data: parsed
-                                }
-                            });
-                        }
+                        const parsed = JSON.parse(unescapedContent);
+                        payloads.push({
+                            type: 'ESCAPED_JSON',
+                            index: 1,
+                            content: unescapedContent,
+                            parsed: {
+                                type: 'JSON',
+                                formatted: JSON.stringify(parsed, null, 2),
+                                data: parsed
+                            }
+                        });
                     } catch (error) {
-                        // If parsing fails, still show the unescaped version as text
+                        // If unescaping or parsing fails, still show the unescaped version as text
                         const unescapedContent = this.unescapeJsonString(content);
-                        if (unescapedContent !== content) {
-                            payloads.push({
+                        payloads.push({
+                            type: 'ESCAPED_JSON',
+                            index: 1,
+                            content: unescapedContent,
+                            parsed: {
                                 type: 'TEXT',
-                                index: 1,
-                                content: unescapedContent,
-                                parsed: {
-                                    type: 'TEXT',
-                                    formatted: unescapedContent,
-                                    data: unescapedContent
-                                }
-                            });
-                        }
+                                formatted: unescapedContent,
+                                data: unescapedContent
+                            }
+                        });
                     }
                 }
 
@@ -956,6 +950,7 @@
             switch (type) {
                 case 'JSON': return 'bg-green-100 text-green-800';
                 case 'XML': return 'bg-blue-100 text-blue-800';
+                case 'ESCAPED_JSON': return 'bg-orange-100 text-orange-800';
                 case 'TEXT': return 'bg-gray-100 text-gray-800';
                 default: return 'bg-gray-100 text-gray-800';
             }
