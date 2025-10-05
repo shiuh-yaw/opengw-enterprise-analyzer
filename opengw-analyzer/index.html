@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGW Enterprise PSP Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        .upload-area.drag-over {
+            border-color: #3182ce;
+            background-color: #ebf8ff;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .step-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .step-card.json {
+            border-left-color: #10b981;
+        }
+        .step-card.xml {
+            border-left-color: #f59e0b;
+        }
+        .step-card.form {
+            border-left-color: #3b82f6;
+        }
+        .step-card.text {
+            border-left-color: #6b7280;
+        }
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-button:hover {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .syntax-highlight .text-blue-600 {
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .syntax-highlight .text-green-600 {
+            color: #16a34a;
+        }
+        .syntax-highlight .text-purple-600 {
+            color: #9333ea;
+        }
+        .syntax-highlight .text-red-600 {
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen gradient-bg">
+        <div class="flex">
+            <!-- Sidebar -->
+            <div class="w-64 bg-gray-800 text-white min-h-screen">
+                <div class="p-6">
+                    <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
+                    <p class="text-gray-400 text-sm">PSP Analyzer v2.0</p>
+                </div>
+                
+                <nav class="mt-8">
+                    <a href="#" onclick="showSection('upload')" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 bg-gray-700 text-white">
+                        <i class="fas fa-upload mr-3"></i>
+                        Upload & Analyze
+                        <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full">1</span>
+                    </a>
+                </nav>
+                
+                <div class="absolute bottom-4 left-4">
+                    <div class="flex items-center text-green-400 text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                        System Online
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 p-8">
+                <!-- Upload & Analyze Section -->
+                <div id="uploadSection" class="section">
+                    <h2 class="text-3xl font-bold text-white mb-2">Upload & Analyze</h2>
+                    <p class="text-gray-200 mb-8">Upload transaction log files for comprehensive automated analysis</p>
+                    
+                    <div class="text-center">
+                        <div class="upload-area p-8 rounded-lg mb-6" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Upload Transaction Log</h3>
+                            <p class="text-gray-600 mb-4">Drag and drop your JSON log file here, or click to browse</p>
+                            <input type="file" id="fileInput" accept=".json" onchange="handleFileUpload(event)" class="hidden">
+                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Status -->
+                <div id="processingStatus" class="hidden card p-6 rounded-xl mb-6">
+                    <div class="text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing transaction log file...</h3>
+                        <div id="fileInfo" class="text-gray-600"></div>
+                    </div>
+                </div>
+
+                <!-- Transaction Steps Analysis -->
+                <div id="stepsAnalysis" class="hidden">
+                    <div class="card p-6 rounded-xl mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">
+                            <i class="fas fa-list-ol mr-2"></i>
+                            Transaction Steps Analysis
+                        </h3>
+                        <div id="stepsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Analysis Results -->
+                <div id="analysisResults" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- PSP API Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-code mr-2"></i>
+                                PSP API Analysis
+                            </h3>
+                            <div id="pspAnalysisResults"></div>
+                        </div>
+
+                        <!-- Multi-Agent AI Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-robot mr-2"></i>
+                                Multi-Agent AI Analysis
+                            </h3>
+                            <div id="aiAnalysisResults"></div>
+                        </div>
+
+                        <!-- Transaction Flow Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                Transaction Flow Analysis
+                            </h3>
+                            <div id="flowAnalysisResults"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allBlocks = [];
+        let transactionSteps = [];
+
+        // File upload handlers
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        // Main file processing function
+        async function processFile(file) {
+            try {
+                // Show processing status
+                document.getElementById('processingStatus').classList.remove('hidden');
+                document.getElementById('processingStatus').classList.add('fade-in');
+                
+                // Update file info
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
+                    <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p class="text-blue-800">Analyzing real transaction steps...</p>
+                `;
+                
+                // Read file content
+                const fileContent = await readFileContent(file);
+                
+                // Parse JSON content
+                const parsedData = JSON.parse(fileContent);
+                
+                // Extract real transaction steps
+                transactionSteps = extractRealTransactionSteps(parsedData);
+                
+                // Update file info with results
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
+                    <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p class="text-green-800">✅ Analysis complete - ${transactionSteps.length} transaction steps found</p>
+                `;
+                
+                // Wait a moment then show results
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Display transaction steps analysis
+                displayTransactionStepsAnalysis();
+                
+                // Display analysis results
+                displayAnalysisResults();
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-red-800"><strong>Error:</strong> Failed to parse file</p>
+                    <p class="text-red-800">${error.message}</p>
+                `;
+            }
+        }
+
+        // Read file content as text
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+        }
+
+        // Extract real transaction steps from OpenGW log data
+        function extractRealTransactionSteps(data) {
+            const steps = [];
+            
+            if (Array.isArray(data)) {
+                data.forEach((entry, index) => {
+                    if (entry.content && entry.content.includes('OPENGW_MESSAGE_LOG')) {
+                        const step = parseTransactionStep(entry, index + 1);
+                        if (step) {
+                            steps.push(step);
+                        }
+                    }
+                });
+            }
+            
+            // Sort by timestamp to ensure correct order
+            steps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            return steps;
+        }
+
+        // Parse individual transaction step from log entry
+        function parseTransactionStep(entry, stepNumber) {
+            try {
+                const content = entry.content;
+                
+                // Extract timestamp
+                const timeMatch = content.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})/);
+                const timestamp = timeMatch ? timeMatch[1] : entry.__time__;
+                
+                // Extract direction and API type
+                const directionMatch = content.match(/\]\[([^\]]+)\]\[([^\]]+)\]\[([^\]]+)\]/);
+                const direction = directionMatch ? directionMatch[2] : 'UNKNOWN';
+                const apiType = directionMatch ? directionMatch[1] : 'UNKNOWN';
+                const endpoint = directionMatch ? directionMatch[3] : 'UNKNOWN';
+                
+                // Extract PSP information
+                let psp = 'Unknown';
+                if (content.includes('ALIPW3SG')) psp = 'Alipay';
+                else if (content.includes('MASTERCARD') || content.includes('api.mastercard.com')) psp = 'Mastercard';
+                else if (content.includes('austreme')) psp = 'Austreme';
+                
+                // Extract and format payload
+                const payload = extractAndFormatPayload(content);
+                
+                // Extract payload size
+                const payloadSize = content.length;
+                
+                // Determine step type and optimization
+                const stepAnalysis = analyzeTransactionStep(content, direction, apiType, psp);
+                
+                return {
+                    stepNumber: stepNumber,
+                    timestamp: timestamp,
+                    direction: direction,
+                    apiType: apiType,
+                    endpoint: endpoint,
+                    psp: psp,
+                    payloadSize: payloadSize,
+                    content: content.substring(0, 200) + '...', // Truncate for display
+                    payload: payload,
+                    analysis: stepAnalysis
+                };
+            } catch (error) {
+                console.error('Error parsing transaction step:', error);
+                return null;
+            }
+        }
+
+        // Extract and format payload from log content
+        function extractAndFormatPayload(content) {
+            let payloadType = 'TEXT';
+            let formattedPayload = content;
+            let rawPayload = content;
+
+            // 1. Try to extract content within [MESSAGE_ENVELOPE_CONTENT]
+            const envelopeContentMatch = content.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\](?:\[MESSAGE_ENVELOPE_EXTRA\]|$)/s);
+            let primaryCandidate = envelopeContentMatch ? envelopeContentMatch[1] : content;
+
+            // 2. Attempt to parse the primary candidate (or full content) as JSON, handling escaped JSON
+            try {
+                const jsonData = unescapeAndParseJson(primaryCandidate);
+                payloadType = 'JSON';
+                formattedPayload = JSON.stringify(jsonData, null, 2);
+                rawPayload = primaryCandidate;
+            } catch (e) {
+                // 3. If not JSON, try to parse as XML
+                if (primaryCandidate.includes('<') && primaryCandidate.includes('>')) {
+                    try {
+                        // Basic check for XML structure
+                        if (primaryCandidate.trim().startsWith('<') && primaryCandidate.trim().endsWith('>')) {
+                            payloadType = 'XML';
+                            formattedPayload = formatXML(primaryCandidate);
+                            rawPayload = primaryCandidate;
+                        } else {
+                            // Could be mixed content, try to find XML within
+                            const xmlMatch = primaryCandidate.match(/<\?xml[\s\S]*?>[\s\S]*?<\/[a-zA-Z0-9]+>/s);
+                            if (xmlMatch) {
+                                payloadType = 'XML';
+                                formattedPayload = formatXML(xmlMatch[0]);
+                                rawPayload = xmlMatch[0];
+                            }
+                        }
+                    } catch (xmlError) {
+                        // Fallback to text if XML parsing fails
+                    }
+                }
+
+                // 4. If not XML, try to parse as URL-encoded form data
+                if (payloadType === 'TEXT' && primaryCandidate.includes('=') && primaryCandidate.includes('&')) {
+                    const formData = {};
+                    primaryCandidate.split('&').forEach(pair => {
+                        const [key, value] = pair.split('=');
+                        if (key && value) {
+                            formData[decodeURIComponent(key)] = decodeURIComponent(value);
+                        }
+                    });
+                    payloadType = 'FORM_DATA';
+                    formattedPayload = JSON.stringify(formData, null, 2);
+                    rawPayload = primaryCandidate;
+                }
+            }
+
+            // 5. If still TEXT, look for untraced JSON or XML within the full content
+            if (payloadType === 'TEXT') {
+                // Look for JSON patterns in the full content
+                const jsonMatches = content.match(/\{[^}]*\}/gs);
+                if (jsonMatches && jsonMatches.length > 0) {
+                    for (const match of jsonMatches) {
+                        try {
+                            const jsonData = unescapeAndParseJson(match);
+                            payloadType = 'JSON';
+                            formattedPayload = JSON.stringify(jsonData, null, 2);
+                            rawPayload = match;
+                            break; // Take the first valid JSON found
+                        } catch (e) {
+                            // Not a valid JSON, continue searching
+                        }
+                    }
+                }
+
+                // If still TEXT, look for XML patterns in the full content
+                if (payloadType === 'TEXT') {
+                    const xmlMatches = content.match(/<\?xml[\s\S]*?>[\s\S]*?<\/[a-zA-Z0-9]+>/gs);
+                    if (xmlMatches && xmlMatches.length > 0) {
+                        payloadType = 'XML';
+                        formattedPayload = formatXML(xmlMatches[0]);
+                        rawPayload = xmlMatches[0];
+                    }
+                }
+            }
+
+            // 6. If still TEXT, truncate for display
+            if (payloadType === 'TEXT') {
+                formattedPayload = content.substring(0, 500) + (content.length > 500 ? '...' : '');
+            }
+
+            return {
+                type: payloadType,
+                formatted: formattedPayload,
+                raw: rawPayload
+            };
+        }
+
+        // Helper function to unescape and parse JSON
+        function unescapeAndParseJson(jsonString) {
+            try {
+                // First, try parsing directly
+                return JSON.parse(jsonString);
+            } catch (e) {
+                // If direct parsing fails, try unescaping and then parsing
+                try {
+                    // Simple unescape: replace \" with "
+                    const unescapedString = jsonString.replace(/\\"/g, "\"");
+                    return JSON.parse(unescapedString);
+                } catch (e2) {
+                    // If unescaping and parsing also fails, try more robust unescaping
+                    try {
+                        // Use a DOM element to unescape HTML entities, then parse
+                        const doc = new DOMParser().parseFromString(jsonString, "text/html");
+                        const unescapedHtml = doc.documentElement.textContent;
+                        return JSON.parse(unescapedHtml);
+                    } catch (e3) {
+                        throw e; // Re-throw original error if all attempts fail
+                    }
+                }
+            }
+        }
+
+        // Format XML for better readability
+        function formatXML(xml) {
+            try {
+                // Simple XML formatting
+                let formatted = xml.replace(/></g, '>\n<');
+                let indent = 0;
+                const lines = formatted.split('\n');
+                
+                return lines.map(line => {
+                    if (line.includes('</') && !line.includes('<![CDATA[')) {
+                        indent--;
+                    }
+                    const indentedLine = '  '.repeat(Math.max(0, indent)) + line.trim();
+                    if (line.includes('<') && !line.includes('</') && !line.includes('/>') && !line.includes('<![CDATA[')) {
+                        indent++;
+                    }
+                    return indentedLine;
+                }).join('\n');
+            } catch (e) {
+                return xml;
+            }
+        }
+
+        // Analyze individual transaction step for optimizations
+        function analyzeTransactionStep(content, direction, apiType, psp) {
+            const optimizations = [];
+            
+            // Check for 3DS authentication
+            if (content.includes('"is3DSAuthentication":false')) {
+                optimizations.push({
+                    priority: 'HIGH',
+                    issue: '3DS Authentication Disabled',
+                    suggestion: 'Enable 3DS 2.0 for enhanced fraud protection',
+                    impact: 'Reduced fraud risk',
+                    source: 'Multi-Agent AI Analysis'
+                });
+            }
+            
+            // Check for large payloads
+            if (content.length > 2000) {
+                optimizations.push({
+                    priority: 'MEDIUM',
+                    issue: 'Large Payload Detected',
+                    suggestion: 'Implement payload compression',
+                    impact: 'Faster processing',
+                    source: 'Transaction Flow Analysis'
+                });
+            }
+            
+            // Check for XML format
+            if (content.includes('<?xml')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'XML Format Usage',
+                    suggestion: 'Convert to JSON for better performance',
+                    impact: 'Simplified parsing',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for external API calls
+            if (direction === 'OUTBOUND_REQUEST' && content.includes('https://')) {
+                optimizations.push({
+                    priority: 'MEDIUM',
+                    issue: 'External API Dependency',
+                    suggestion: 'Implement circuit breaker pattern',
+                    impact: 'Better error handling',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for audit logging
+            if (content.includes('auditlog') || content.includes('austreme')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'Synchronous Audit Logging',
+                    suggestion: 'Implement asynchronous audit logging',
+                    impact: 'Reduced latency',
+                    source: 'Transaction Flow Analysis'
+                });
+            }
+            
+            return {
+                stepType: determineStepType(content, direction, apiType),
+                optimizations: optimizations,
+                processingTime: estimateProcessingTime(content, direction),
+                riskLevel: assessRiskLevel(content, psp)
+            };
+        }
+
+        // Determine the type of transaction step
+        function determineStepType(content, direction, apiType) {
+            if (content.includes('payments/pay')) return 'Payment Request';
+            if (content.includes('tokenize')) return 'Card Tokenization';
+            if (content.includes('authorize')) return 'Authorization';
+            if (content.includes('capture')) return 'Payment Capture';
+            if (content.includes('auditlog')) return 'Audit Logging';
+            if (content.includes('notify')) return 'Notification';
+            return 'Processing';
+        }
+
+        // Estimate processing time for the step
+        function estimateProcessingTime(content, direction) {
+            if (direction === 'OUTBOUND_REQUEST') return 'Variable (depends on external API)';
+            if (content.length > 2000) return 'High (large payload)';
+            if (content.includes('encrypt')) return 'Medium (encryption)';
+            return 'Low';
+        }
+
+        // Assess risk level of the step
+        function assessRiskLevel(content, psp) {
+            let risk = 'LOW';
+            if (content.includes('"is3DSAuthentication":false')) risk = 'HIGH';
+            else if (content.includes('card') || content.includes('payment')) risk = 'MEDIUM';
+            return risk;
+        }
+
+        // Display transaction steps analysis
+        function displayTransactionStepsAnalysis() {
+            if (!transactionSteps || transactionSteps.length === 0) {
+                return;
+            }
+            
+            const stepsHtml = transactionSteps.map((step, index) => `
+                <div class="step-card bg-white border border-gray-200 rounded-lg p-4 mb-4 ${step.payload.type.toLowerCase()}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full mr-3">Step ${step.stepNumber}</span>
+                            <h4 class="font-semibold text-gray-900">${step.analysis.stepType}</h4>
+                        </div>
+                        <div class="text-xs text-gray-500">${step.timestamp}</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Direction:</span>
+                            <div class="text-sm">${step.direction}</div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">PSP:</span>
+                            <div class="text-sm">${step.psp}</div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Payload Type:</span>
+                            <div class="text-sm">
+                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">${step.payload.type}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Risk Level:</span>
+                            <div class="text-sm">
+                                <span class="px-2 py-1 rounded text-xs ${getRiskLevelClass(step.analysis.riskLevel)}">
+                                    ${step.analysis.riskLevel}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payload View -->
+                    <div class="border-t pt-3 mb-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h5 class="text-sm font-medium text-gray-700">Payload Data:</h5>
+                            <button onclick="togglePayload(${step.stepNumber})" class="text-xs text-blue-600 hover:text-blue-800">
+                                <span id="toggle-text-${step.stepNumber}">Show Details</span>
+                            </button>
+                        </div>
+                        <div id="payload-${step.stepNumber}" class="hidden">
+                            <div class="bg-gray-50 rounded p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-medium text-gray-600">Format: ${step.payload.type}</span>
+                                    <button onclick="copyPayload(${step.stepNumber})" class="text-xs text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-copy mr-1"></i>Copy
+                                    </button>
+                                </div>
+                                <pre class="syntax-highlight text-xs text-gray-800 whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto" id="payload-content-${step.stepNumber}">${highlightSyntax(step.payload.formatted, step.payload.type)}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${step.analysis.optimizations.length > 0 ? `
+                        <div class="border-t pt-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Optimizations:</h5>
+                            ${step.analysis.optimizations.map(opt => `
+                                <div class="bg-gray-50 p-2 rounded mb-2">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-medium">${opt.issue}</span>
+                                        <span class="text-white text-xs px-2 py-1 rounded ${getPriorityClass(opt.priority)}">${opt.priority}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-600 mb-1">${opt.suggestion}</div>
+                                    <div class="text-xs text-green-600">Impact: ${opt.impact}</div>
+                                    <div class="text-xs text-blue-600">Source: ${opt.source}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div class="text-xs text-green-600 border-t pt-2">✅ No optimizations needed - step is optimal</div>'}
+                </div>
+            `).join('');
+            
+            document.getElementById('stepsContainer').innerHTML = stepsHtml;
+            document.getElementById('stepsAnalysis').classList.remove('hidden');
+            document.getElementById('stepsAnalysis').classList.add('fade-in');
+        }
+
+        // Display analysis results summary
+        function displayAnalysisResults() {
+            // PSP API Analysis
+            const pspAnalysis = generatePSPAnalysis();
+            document.getElementById('pspAnalysisResults').innerHTML = pspAnalysis;
+            
+            // Multi-Agent AI Analysis
+            const aiAnalysis = generateAIAnalysis();
+            document.getElementById('aiAnalysisResults').innerHTML = aiAnalysis;
+            
+            // Transaction Flow Analysis
+            const flowAnalysis = generateFlowAnalysis();
+            document.getElementById('flowAnalysisResults').innerHTML = flowAnalysis;
+            
+            document.getElementById('analysisResults').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('fade-in');
+        }
+
+        // Generate PSP API Analysis summary
+        function generatePSPAnalysis() {
+            const psps = [...new Set(transactionSteps.map(step => step.psp))];
+            const apiTypes = [...new Set(transactionSteps.map(step => step.apiType))];
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">PSPs Detected:</span> ${psps.join(', ')}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">API Types:</span> ${apiTypes.join(', ')}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Total Steps:</span> ${transactionSteps.length}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate AI Analysis summary
+        function generateAIAnalysis() {
+            const highRiskSteps = transactionSteps.filter(step => step.analysis.riskLevel === 'HIGH').length;
+            const securityIssues = transactionSteps.filter(step => 
+                step.analysis.optimizations.some(opt => opt.issue.includes('3DS'))
+            ).length;
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">High Risk Steps:</span> ${highRiskSteps}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Security Issues:</span> ${securityIssues}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Risk Assessment:</span> ${highRiskSteps > 0 ? 'Needs Attention' : 'Good'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Flow Analysis summary
+        function generateFlowAnalysis() {
+            const totalOptimizations = transactionSteps.reduce((sum, step) => sum + step.analysis.optimizations.length, 0);
+            const avgPayloadSize = transactionSteps.reduce((sum, step) => sum + step.payloadSize, 0) / transactionSteps.length;
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">Optimization Opportunities:</span> ${totalOptimizations}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Avg Payload Size:</span> ${Math.round(avgPayloadSize)} bytes
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Flow Efficiency:</span> ${totalOptimizations < 5 ? 'Good' : 'Needs Improvement'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions for CSS classes
+        function getRiskLevelClass(riskLevel) {
+            switch(riskLevel) {
+                case 'HIGH': return 'bg-red-100 text-red-800';
+                case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+                case 'LOW': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getPriorityClass(priority) {
+            switch(priority) {
+                case 'HIGH': return 'bg-red-500';
+                case 'MEDIUM': return 'bg-yellow-500';
+                case 'LOW': return 'bg-blue-500';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        // Navigation function
+        function showSection(sectionName) {
+            // This function can be expanded for multiple sections
+        }
+
+        // Toggle payload visibility
+        function togglePayload(stepNumber) {
+            const payloadDiv = document.getElementById(`payload-${stepNumber}`);
+            const toggleText = document.getElementById(`toggle-text-${stepNumber}`);
+            
+            if (payloadDiv.classList.contains('hidden')) {
+                payloadDiv.classList.remove('hidden');
+                payloadDiv.classList.add('fade-in');
+                toggleText.textContent = 'Hide Details';
+            } else {
+                payloadDiv.classList.add('hidden');
+                payloadDiv.classList.remove('fade-in');
+                toggleText.textContent = 'Show Details';
+            }
+        }
+
+        // Copy payload to clipboard
+        function copyPayload(stepNumber) {
+            const payloadContent = document.getElementById(`payload-content-${stepNumber}`);
+            if (payloadContent) {
+                const text = payloadContent.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    // Show feedback
+                    const button = event.target.closest('button');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                    button.classList.add('text-green-600');
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('text-green-600');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    const button = event.target.closest('button');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                    button.classList.add('text-green-600');
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('text-green-600');
+                    }, 2000);
+                });
+            }
+        }
+
+        // Show detailed view modal (for future enhancement)
+        function showDetailedView(stepNumber) {
+            const step = transactionSteps.find(s => s.stepNumber === stepNumber);
+            if (step) {
+                // Create and show modal with detailed step information
+                // This can be enhanced further based on requirements
+                alert(`Detailed view for Step ${stepNumber}: ${step.analysis.stepType}`);
+            }
+        }
+
+        // Enhanced syntax highlighting for different payload types
+        function highlightSyntax(content, type) {
+            if (type === 'JSON') {
+                return content.replace(/"([^"]+)":/g, '<span class="text-blue-600 font-semibold">"$1":</span>')
+                             .replace(/: "([^"]+)"/g, ': <span class="text-green-600">"$1"</span>')
+                             .replace(/: (\d+)/g, ': <span class="text-purple-600">$1</span>')
+                             .replace(/: (true|false|null)/g, ': <span class="text-red-600">$1</span>');
+            } else if (type === 'XML') {
+                return content.replace(/&lt;([^&]+)&gt;/g, '<span class="text-blue-600">&lt;$1&gt;</span>')
+                             .replace(/&lt;\/([^&]+)&gt;/g, '<span class="text-red-600">&lt;/$1&gt;</span>');
+            }
+            return content;
+        }
+
+        // Escape HTML for safe display
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Format content based on type
+        function formatContent(content, type) {
+            try {
+                if (type === 'JSON') {
+                    const parsed = JSON.parse(content);
+                    return JSON.stringify(parsed, null, 2);
+                } else if (type === 'XML') {
+                    // Simple XML formatting
+                    return content.replace(/></g, '>\n<')
+                                 .split('\n')
+                                 .map((line, index) => '  '.repeat(Math.max(0, index)) + line.trim())
+                                 .join('\n');
+                }
+                return content;
+            } catch (e) {
+                return content;
+            }
+        }
+    </script>
+</body>
+</html>
