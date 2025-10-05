@@ -647,39 +647,16 @@
                 if (jsonMatches) {
                     jsonMatches.forEach((match, index) => {
                         const jsonContent = match.replace(/\[MESSAGE_ENVELOPE_CONTENT\]\[/, '').replace(/\]\[MESSAGE_ENVELOPE_EXTRA\]/, '');
-                        const parsedContent = this.tryParseContent(jsonContent);
                         
-                        // If the content is detected as escaped JSON, automatically convert it to JSON
-                        if (this.detectEscapedJson(jsonContent)) {
-                            try {
-                                const unescapedContent = this.smartUnescapeAndParse(jsonContent);
-                                payloads.push({
-                                    type: 'MESSAGE_ENVELOPE_CONTENT',
-                                    index: index + 1,
-                                    content: jsonContent,
-                                    parsed: {
-                                        type: 'JSON',
-                                        formatted: JSON.stringify(unescapedContent, null, 2),
-                                        data: unescapedContent
-                                    }
-                                });
-                            } catch (error) {
-                                // Fallback to original parsing if unescaping fails
-                                payloads.push({
-                                    type: 'MESSAGE_ENVELOPE_CONTENT',
-                                    index: index + 1,
-                                    content: jsonContent,
-                                    parsed: parsedContent
-                                });
-                            }
-                        } else {
-                            payloads.push({
-                                type: 'MESSAGE_ENVELOPE_CONTENT',
-                                index: index + 1,
-                                content: jsonContent,
-                                parsed: parsedContent
-                            });
-                        }
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(jsonContent);
+                        
+                        payloads.push({
+                            type: 'MESSAGE_ENVELOPE_CONTENT',
+                            index: index + 1,
+                            content: jsonContent,
+                            parsed: processedPayload
+                        });
                     });
                 }
 
@@ -705,38 +682,16 @@
                 if (cdataMatches) {
                     cdataMatches.forEach((match, index) => {
                         const cdataContent = match.replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '');
-                        const parsedContent = this.tryParseContent(cdataContent);
                         
-                        // Check if CDATA contains escaped JSON
-                        if (this.detectEscapedJson(cdataContent)) {
-                            try {
-                                const unescapedContent = this.smartUnescapeAndParse(cdataContent);
-                                payloads.push({
-                                    type: 'CDATA_JSON',
-                                    index: index + 1,
-                                    content: cdataContent,
-                                    parsed: {
-                                        type: 'JSON',
-                                        formatted: JSON.stringify(unescapedContent, null, 2),
-                                        data: unescapedContent
-                                    }
-                                });
-                            } catch (error) {
-                                payloads.push({
-                                    type: 'CDATA_JSON',
-                                    index: index + 1,
-                                    content: cdataContent,
-                                    parsed: parsedContent
-                                });
-                            }
-                        } else {
-                            payloads.push({
-                                type: 'CDATA_JSON',
-                                index: index + 1,
-                                content: cdataContent,
-                                parsed: parsedContent
-                            });
-                        }
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(cdataContent);
+                        
+                        payloads.push({
+                            type: 'CDATA_JSON',
+                            index: index + 1,
+                            content: cdataContent,
+                            parsed: processedPayload
+                        });
                     });
                 }
 
@@ -744,36 +699,128 @@
                 const escapedJsonMatches = this.findEscapedJsonStrings(content);
                 if (escapedJsonMatches.length > 0) {
                     escapedJsonMatches.forEach((match, index) => {
-                        try {
-                            const unescapedContent = this.smartUnescapeAndParse(match);
-                            payloads.push({
-                                type: 'ESCAPED_TEXT',
-                                index: index + 1,
-                                content: match,
-                                parsed: {
-                                    type: 'JSON',
-                                    formatted: JSON.stringify(unescapedContent, null, 2),
-                                    data: unescapedContent
-                                }
-                            });
-                        } catch (error) {
-                            // If parsing fails, show as unescaped text
-                            const unescapedText = this.unescapeJsonString(match);
-                            payloads.push({
-                                type: 'ESCAPED_TEXT',
-                                index: index + 1,
-                                content: match,
-                                parsed: {
-                                    type: 'TEXT',
-                                    formatted: unescapedText,
-                                    data: unescapedText
-                                }
-                            });
-                        }
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(match);
+                        
+                        payloads.push({
+                            type: 'ESCAPED_TEXT',
+                            index: index + 1,
+                            content: match,
+                            parsed: processedPayload
+                        });
                     });
                 }
 
                 return payloads;
+            }
+
+            // New method to recursively process payloads and convert all escaped JSON to JSON
+            static recursivelyProcessPayload(content) {
+                try {
+                    // First, try to parse as direct JSON
+                    const directJson = JSON.parse(content);
+                    return {
+                        type: 'JSON',
+                        formatted: JSON.stringify(directJson, null, 2),
+                        data: directJson
+                    };
+                } catch (error) {
+                    // If direct parsing fails, check for escaped JSON patterns
+                    if (this.detectEscapedJson(content)) {
+                        try {
+                            // Attempt to unescape and parse as JSON
+                            const unescapedContent = this.smartUnescapeAndParse(content);
+                            return {
+                                type: 'JSON',
+                                formatted: JSON.stringify(unescapedContent, null, 2),
+                                data: unescapedContent
+                            };
+                        } catch (unescapeError) {
+                            // If unescaping fails, try progressive unescaping
+                            const progressiveResult = this.progressiveUnescapeAndParse(content);
+                            if (progressiveResult) {
+                                return {
+                                    type: 'JSON',
+                                    formatted: JSON.stringify(progressiveResult, null, 2),
+                                    data: progressiveResult
+                                };
+                            }
+                        }
+                    }
+                    
+                    // Check if content contains nested escaped JSON strings
+                    const nestedJsonResult = this.extractNestedEscapedJson(content);
+                    if (nestedJsonResult) {
+                        return {
+                            type: 'JSON',
+                            formatted: JSON.stringify(nestedJsonResult, null, 2),
+                            data: nestedJsonResult
+                        };
+                    }
+                    
+                    // If all JSON parsing attempts fail, return as formatted text
+                    return {
+                        type: 'TEXT',
+                        formatted: content,
+                        data: content
+                    };
+                }
+            }
+
+            // New method for progressive unescaping of deeply nested escaped JSON
+            static progressiveUnescapeAndParse(content) {
+                let current = content;
+                let maxAttempts = 5; // Prevent infinite loops
+                
+                for (let i = 0; i < maxAttempts; i++) {
+                    try {
+                        // Try to parse current content as JSON
+                        return JSON.parse(current);
+                    } catch (error) {
+                        // If parsing fails, try to unescape one level
+                        if (this.detectEscapedJson(current)) {
+                            current = this.unescapeJsonString(current);
+                        } else {
+                            break; // No more escaping detected
+                        }
+                    }
+                }
+                
+                return null; // Could not parse after all attempts
+            }
+
+            // New method to extract and convert nested escaped JSON within text
+            static extractNestedEscapedJson(content) {
+                // Look for JSON-like patterns within the content
+                const jsonPatterns = [
+                    /\{[^{}]*"[^"]*"[^{}]*:[^{}]*"[^"]*"[^{}]*\}/g, // Simple JSON objects
+                    /\[[^\[\]]*\{[^{}]*\}[^\[\]]*\]/g, // Arrays containing objects
+                    /"(\{[^"]*\})"/g, // Quoted JSON objects
+                    /"(\[[^\]]*\])"/g // Quoted JSON arrays
+                ];
+                
+                for (const pattern of jsonPatterns) {
+                    const matches = content.match(pattern);
+                    if (matches) {
+                        for (const match of matches) {
+                            try {
+                                // Try to parse the match directly
+                                return JSON.parse(match);
+                            } catch (error) {
+                                try {
+                                    // Try to unescape and parse
+                                    const unescaped = this.unescapeJsonString(match);
+                                    return JSON.parse(unescaped);
+                                } catch (unescapeError) {
+                                    // Continue to next match
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return null; // No valid JSON found
             }
 
             static formatContent(content) {
