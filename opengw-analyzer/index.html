@@ -144,6 +144,64 @@
         </div>
     </div>
 
+    <!-- Payload Detail Modal -->
+    <div id="payloadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-code mr-2"></i>
+                    Payload Details - <span id="modalStepTitle">Step #</span>
+                </h3>
+                <button onclick="closePayloadModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <!-- Payload Type Tabs -->
+                <div class="flex space-x-2 mb-4 border-b">
+                    <button id="rawTab" onclick="switchPayloadTab('raw')" class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
+                        Raw Content
+                    </button>
+                    <button id="formattedTab" onclick="switchPayloadTab('formatted')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Formatted
+                    </button>
+                    <button id="extractedTab" onclick="switchPayloadTab('extracted')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Extracted Payloads
+                    </button>
+                </div>
+
+                <!-- Raw Content Tab -->
+                <div id="rawContent" class="tab-content">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <pre id="rawPayload" class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Formatted Content Tab -->
+                <div id="formattedContent" class="tab-content hidden">
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-900 mb-2">Step Information</h4>
+                            <div id="stepInfo" class="text-sm text-blue-800"></div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2">Formatted Payload</h4>
+                            <pre id="formattedPayload" class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Payloads Tab -->
+                <div id="extractedContent" class="tab-content hidden">
+                    <div id="extractedPayloads" class="space-y-4">
+                        <!-- Extracted payloads will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let allBlocks = [];
         let transactionSteps = [];
@@ -270,9 +328,10 @@
                 
                 // Extract PSP information
                 let psp = 'Unknown';
-                if (content.includes('ALIPW3SG')) psp = 'Alipay';
+                if (content.includes('ALIPW3SG') || content.includes('ALIPW3BR')) psp = 'Alipay';
                 else if (content.includes('MASTERCARD') || content.includes('api.mastercard.com')) psp = 'Mastercard';
                 else if (content.includes('austreme')) psp = 'Austreme';
+                else if (content.includes('STONE') || content.includes('mundipagg')) psp = 'Stone/Mundipagg';
                 
                 // Extract payload size
                 const payloadSize = content.length;
@@ -289,6 +348,7 @@
                     psp: psp,
                     payloadSize: payloadSize,
                     content: content.substring(0, 200) + '...', // Truncate for display
+                    fullContent: content, // Store full content for detailed view
                     analysis: stepAnalysis
                 };
             } catch (error) {
@@ -404,7 +464,14 @@
                             <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full mr-3">Step ${step.stepNumber}</span>
                             <h4 class="font-semibold text-gray-900">${step.analysis.stepType}</h4>
                         </div>
-                        <div class="text-xs text-gray-500">${step.timestamp}</div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openPayloadModal(transactionSteps[${index}])" 
+                                    class="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>
+                                View Detail
+                            </button>
+                            <div class="text-xs text-gray-500">${step.timestamp}</div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
@@ -546,6 +613,368 @@
                 case 'MEDIUM': return 'bg-yellow-500';
                 case 'LOW': return 'bg-blue-500';
                 default: return 'bg-gray-500';
+            }
+        }
+
+        // Payload parsing and formatting utilities
+        class PayloadParser {
+            static parseAndFormat(content) {
+                const results = {
+                    raw: content,
+                    formatted: null,
+                    extracted: [],
+                    type: 'string'
+                };
+
+                try {
+                    // Try to detect and parse different payload types
+                    results.extracted = this.extractAllPayloads(content);
+                    results.formatted = this.formatContent(content);
+                    results.type = this.detectContentType(content);
+                } catch (error) {
+                    console.error('Error parsing payload:', error);
+                    results.formatted = content;
+                }
+
+                return results;
+            }
+
+            static extractAllPayloads(content) {
+                const payloads = [];
+                
+                // Extract JSON payloads from MESSAGE_ENVELOPE_CONTENT
+                const jsonMatches = content.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\]\[MESSAGE_ENVELOPE_EXTRA\]/g);
+                if (jsonMatches) {
+                    jsonMatches.forEach((match, index) => {
+                        const jsonContent = match.replace(/\[MESSAGE_ENVELOPE_CONTENT\]\[/, '').replace(/\]\[MESSAGE_ENVELOPE_EXTRA\]/, '');
+                        payloads.push({
+                            type: 'MESSAGE_ENVELOPE_CONTENT',
+                            index: index + 1,
+                            content: jsonContent,
+                            parsed: this.tryParseContent(jsonContent)
+                        });
+                    });
+                }
+
+                // Extract XML payloads
+                const xmlMatches = content.match(/<\?xml[\s\S]*?<\/[^>]+>/g);
+                if (xmlMatches) {
+                    xmlMatches.forEach((match, index) => {
+                        payloads.push({
+                            type: 'XML',
+                            index: index + 1,
+                            content: match,
+                            parsed: this.formatXML(match)
+                        });
+                    });
+                }
+
+                // Extract nested JSON from CDATA sections
+                const cdataMatches = content.match(/<!\[CDATA\[(.*?)\]\]>/g);
+                if (cdataMatches) {
+                    cdataMatches.forEach((match, index) => {
+                        const cdataContent = match.replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '');
+                        payloads.push({
+                            type: 'CDATA_JSON',
+                            index: index + 1,
+                            content: cdataContent,
+                            parsed: this.tryParseContent(cdataContent)
+                        });
+                    });
+                }
+
+                // Extract escaped JSON strings
+                const escapedJsonMatches = content.match(/\\"[^"]*\\":\s*\\"[^"]*\\"/g);
+                if (escapedJsonMatches) {
+                    const escapedJson = this.unescapeJsonString(content);
+                    if (escapedJson !== content) {
+                        payloads.push({
+                            type: 'ESCAPED_JSON',
+                            index: 1,
+                            content: escapedJson,
+                            parsed: this.tryParseContent(escapedJson)
+                        });
+                    }
+                }
+
+                return payloads;
+            }
+
+            static tryParseContent(content) {
+                try {
+                    // Try parsing as JSON first
+                    const parsed = JSON.parse(content);
+                    return {
+                        type: 'JSON',
+                        formatted: JSON.stringify(parsed, null, 2),
+                        data: parsed
+                    };
+                } catch (jsonError) {
+                    try {
+                        // Try unescaping and parsing again
+                        const unescaped = this.unescapeJsonString(content);
+                        const parsed = JSON.parse(unescaped);
+                        return {
+                            type: 'ESCAPED_JSON',
+                            formatted: JSON.stringify(parsed, null, 2),
+                            data: parsed
+                        };
+                    } catch (escapedError) {
+                        // Check if it's XML
+                        if (content.trim().startsWith('<')) {
+                            return {
+                                type: 'XML',
+                                formatted: this.formatXML(content),
+                                data: content
+                            };
+                        }
+                        
+                        // Return as plain text
+                        return {
+                            type: 'TEXT',
+                            formatted: content,
+                            data: content
+                        };
+                    }
+                }
+            }
+
+            static formatContent(content) {
+                try {
+                    // Try to format as JSON first
+                    const parsed = JSON.parse(content);
+                    return JSON.stringify(parsed, null, 2);
+                } catch (error) {
+                    // Try to format as XML
+                    if (content.trim().startsWith('<')) {
+                        return this.formatXML(content);
+                    }
+                    
+                    // Return original content if no formatting possible
+                    return content;
+                }
+            }
+
+            static formatXML(xmlString) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                    
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        return xmlString; // Return original if parsing fails
+                    }
+                    
+                    return this.xmlToString(xmlDoc, 0);
+                } catch (error) {
+                    return xmlString;
+                }
+            }
+
+            static xmlToString(node, indent = 0) {
+                const indentStr = '  '.repeat(indent);
+                
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent.trim();
+                    return text ? text : '';
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    let result = `${indentStr}<${node.nodeName}`;
+                    
+                    // Add attributes
+                    for (let attr of node.attributes || []) {
+                        result += ` ${attr.name}="${attr.value}"`;
+                    }
+                    
+                    if (node.childNodes.length === 0) {
+                        result += '/>';
+                        return result;
+                    }
+                    
+                    result += '>';
+                    
+                    let hasElementChildren = false;
+                    for (let child of node.childNodes) {
+                        if (child.nodeType === Node.ELEMENT_NODE) {
+                            hasElementChildren = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasElementChildren) {
+                        result += '\n';
+                        for (let child of node.childNodes) {
+                            const childStr = this.xmlToString(child, indent + 1);
+                            if (childStr.trim()) {
+                                result += childStr + '\n';
+                            }
+                        }
+                        result += `${indentStr}</${node.nodeName}>`;
+                    } else {
+                        // Only text content
+                        let textContent = '';
+                        for (let child of node.childNodes) {
+                            if (child.nodeType === Node.TEXT_NODE) {
+                                textContent += child.textContent;
+                            }
+                        }
+                        result += textContent + `</${node.nodeName}>`;
+                    }
+                    
+                    return result;
+                }
+                
+                return '';
+            }
+
+            static unescapeJsonString(str) {
+                return str
+                    .replace(/\\"/g, '"')
+                    .replace(/\\\\/g, '\\')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\r/g, '\r')
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\f/g, '\f')
+                    .replace(/\\b/g, '\b');
+            }
+
+            static detectContentType(content) {
+                if (content.trim().startsWith('<')) return 'XML';
+                
+                try {
+                    JSON.parse(content);
+                    return 'JSON';
+                } catch (error) {
+                    if (content.includes('\\"') && content.includes('\\n')) {
+                        return 'ESCAPED_JSON';
+                    }
+                    return 'TEXT';
+                }
+            }
+        }
+
+        // Modal control functions
+        function openPayloadModal(stepData) {
+            const modal = document.getElementById('payloadModal');
+            const modalTitle = document.getElementById('modalStepTitle');
+            
+            modalTitle.textContent = `Step ${stepData.stepNumber}`;
+            
+            // Parse the payload
+            const parsedPayload = PayloadParser.parseAndFormat(stepData.fullContent || stepData.content);
+            
+            // Store parsed data for tab switching
+            window.currentPayloadData = {
+                step: stepData,
+                parsed: parsedPayload
+            };
+            
+            // Show raw content by default
+            switchPayloadTab('raw');
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePayloadModal() {
+            const modal = document.getElementById('payloadModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchPayloadTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all tabs
+            document.querySelectorAll('#payloadModal button[id$="Tab"]').forEach(tab => {
+                tab.classList.remove('text-blue-600', 'border-blue-600');
+                tab.classList.add('text-gray-500');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}Content`).classList.remove('hidden');
+            
+            // Add active state to selected tab
+            const activeTab = document.getElementById(`${tabName}Tab`);
+            activeTab.classList.remove('text-gray-500');
+            activeTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            
+            // Populate content based on tab
+            const data = window.currentPayloadData;
+            if (!data) return;
+            
+            switch (tabName) {
+                case 'raw':
+                    document.getElementById('rawPayload').textContent = data.parsed.raw;
+                    break;
+                    
+                case 'formatted':
+                    populateFormattedTab(data);
+                    break;
+                    
+                case 'extracted':
+                    populateExtractedTab(data);
+                    break;
+            }
+        }
+
+        function populateFormattedTab(data) {
+            const stepInfo = document.getElementById('stepInfo');
+            const formattedPayload = document.getElementById('formattedPayload');
+            
+            stepInfo.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>Timestamp:</strong> ${data.step.timestamp}</div>
+                    <div><strong>Direction:</strong> ${data.step.direction}</div>
+                    <div><strong>API Type:</strong> ${data.step.apiType}</div>
+                    <div><strong>PSP:</strong> ${data.step.psp}</div>
+                    <div><strong>Endpoint:</strong> ${data.step.endpoint}</div>
+                    <div><strong>Content Type:</strong> ${data.parsed.type}</div>
+                </div>
+            `;
+            
+            formattedPayload.textContent = data.parsed.formatted || data.parsed.raw;
+        }
+
+        function populateExtractedTab(data) {
+            const container = document.getElementById('extractedPayloads');
+            
+            if (data.parsed.extracted.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>No extractable payloads found in this step.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = data.parsed.extracted.map((payload, index) => `
+                <div class="border rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h5 class="font-semibold text-gray-900">
+                            ${payload.type} #${payload.index}
+                        </h5>
+                        <span class="px-2 py-1 text-xs font-medium rounded ${getPayloadTypeClass(payload.parsed.type)}">
+                            ${payload.parsed.type}
+                        </span>
+                    </div>
+                    <pre class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto bg-gray-50 p-3 rounded">${payload.parsed.formatted}</pre>
+                </div>
+            `).join('');
+        }
+
+        function getPayloadTypeClass(type) {
+            switch (type) {
+                case 'JSON': return 'bg-green-100 text-green-800';
+                case 'ESCAPED_JSON': return 'bg-yellow-100 text-yellow-800';
+                case 'XML': return 'bg-blue-100 text-blue-800';
+                case 'TEXT': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
             }
         }
 
