@@ -1,0 +1,22 @@
+[
+  {
+    "__time__": "2025-09-24 10:07:40,602",
+    "content": "2025-09-24 10:07:40,602 [OPENGW_MESSAGE_LOG][OPENAPIv2][INBOUND_REQUEST][HTTPS] [MESSAGE_ENVELOPE_CONTENT][\"{\\\"paymentRequestId\\\":\\\"test123\\\",\\\"amount\\\":1000,\\\"currency\\\":\\\"USD\\\",\\\"merchantData\\\":\\\"{\\\\\\\"orderId\\\\\\\":\\\\\\\"ORD-001\\\\\\\",\\\\\\\"customerId\\\\\\\":\\\\\\\"CUST-456\\\\\\\"}\\\"}\"][][MESSAGE_ENVELOPE_EXTRA][]"
+  },
+  {
+    "__time__": "2025-09-24 10:07:41,123",
+    "content": "2025-09-24 10:07:41,123 [OPENGW_MESSAGE_LOG][OPENAPIv2][OUTBOUND_RESPONSE][HTTPS] [MESSAGE_ENVELOPE_CONTENT][\"{\\\"status\\\":\\\"success\\\",\\\"transactionId\\\":\\\"TXN-789\\\",\\\"responseData\\\":\\\"{\\\\\\\"authCode\\\\\\\":\\\\\\\"AUTH123\\\\\\\",\\\\\\\"cardMask\\\\\\\":\\\\\\\"****1234\\\\\\\",\\\\\\\"processorResponse\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"code\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"message\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"Approved\\\\\\\\\\\\\\\"}\\\\\\\"}\\\"}\"]][][MESSAGE_ENVELOPE_EXTRA][]"
+  },
+  {
+    "__time__": "2025-09-24 10:07:42,456",
+    "content": "2025-09-24 10:07:42,456 [OPENGW_MESSAGE_LOG][XMLv1][INBOUND_REQUEST][SOAP] <?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><PaymentRequest><![CDATA[{\"paymentId\":\"PAY-999\",\"amount\":2500,\"details\":\"{\\\"cardNumber\\\":\\\"4111111111111111\\\",\\\"expiryDate\\\":\\\"12/25\\\"}\"}]]></PaymentRequest></soap:Body></soap:Envelope>"
+  },
+  {
+    "__time__": "2025-09-24 10:07:43,789",
+    "content": "2025-09-24 10:07:43,789 [OPENGW_MESSAGE_LOG][OPENAPIv2][WEBHOOK_NOTIFICATION][HTTPS] [MESSAGE_ENVELOPE_CONTENT][\"{\\\"eventType\\\":\\\"payment.completed\\\",\\\"timestamp\\\":\\\"2025-09-24T10:07:43Z\\\",\\\"data\\\":\\\"{\\\\\\\"paymentId\\\\\\\":\\\\\\\"PAY-999\\\\\\\",\\\\\\\"status\\\\\\\":\\\\\\\"completed\\\\\\\",\\\\\\\"metadata\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"source\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"mobile_app\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"version\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"2.1.0\\\\\\\\\\\\\\\"}\\\\\\\"}\\\"}\"][][MESSAGE_ENVELOPE_EXTRA][]"
+  },
+  {
+    "__time__": "2025-09-24 10:07:44,012",
+    "content": "2025-09-24 10:07:44,012 [OPENGW_MESSAGE_LOG][OPENAPIv2][ERROR_RESPONSE][HTTPS] [MESSAGE_ENVELOPE_CONTENT][\"{\\\"error\\\":{\\\"code\\\":\\\"INVALID_CARD\\\",\\\"message\\\":\\\"Card validation failed\\\",\\\"details\\\":\\\"{\\\\\\\"fieldErrors\\\\\\\":[{\\\\\\\\\\\\\\\"field\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"cardNumber\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"error\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"Invalid format\\\\\\\\\\\\\\\"},{\\\\\\\\\\\\\\\"field\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"cvv\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"error\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"Required\\\\\\\\\\\\\\\"}]}\\\"},\\\"requestId\\\":\\\"REQ-456\\\"}\"][][MESSAGE_ENVELOPE_EXTRA][]"
+  }
+]
