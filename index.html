@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGW Enterprise PSP Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        .upload-area.drag-over {
+            border-color: #3182ce;
+            background-color: #ebf8ff;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .step-card {
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen gradient-bg">
+        <div class="flex">
+            <!-- Sidebar -->
+            <div class="w-64 bg-gray-800 text-white min-h-screen">
+                <div class="p-6">
+                    <h1 class="text-xl font-bold">OpenGW Enterprise</h1>
+                    <p class="text-gray-400 text-sm">PSP Analyzer v2.0</p>
+                </div>
+                
+                <nav class="mt-8">
+                    <a href="#" onclick="showSection('upload')" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 bg-gray-700 text-white">
+                        <i class="fas fa-upload mr-3"></i>
+                        Upload & Analyze
+                        <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full">1</span>
+                    </a>
+                </nav>
+                
+                <div class="absolute bottom-4 left-4">
+                    <div class="flex items-center text-green-400 text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                        System Online
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 p-8">
+                <!-- Upload & Analyze Section -->
+                <div id="uploadSection" class="section">
+                    <h2 class="text-3xl font-bold text-white mb-2">Upload & Analyze</h2>
+                    <p class="text-gray-200 mb-8">Upload transaction log files for comprehensive automated analysis</p>
+                    
+                    <div class="text-center">
+                        <div class="upload-area p-8 rounded-lg mb-6" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Upload Transaction Log</h3>
+                            <p class="text-gray-600 mb-4">Drag and drop your JSON log file here, or click to browse</p>
+                            <input type="file" id="fileInput" accept=".json" onchange="handleFileUpload(event)" class="hidden">
+                            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Status -->
+                <div id="processingStatus" class="hidden card p-6 rounded-xl mb-6">
+                    <div class="text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing transaction log file...</h3>
+                        <div id="fileInfo" class="text-gray-600"></div>
+                    </div>
+                </div>
+
+                <!-- Transaction Steps Analysis -->
+                <div id="stepsAnalysis" class="hidden">
+                    <div class="card p-6 rounded-xl mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">
+                            <i class="fas fa-list-ol mr-2"></i>
+                            Transaction Steps Analysis
+                        </h3>
+                        <div id="stepsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Analysis Results -->
+                <div id="analysisResults" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- PSP API Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-code mr-2"></i>
+                                PSP API Analysis
+                            </h3>
+                            <div id="pspAnalysisResults"></div>
+                        </div>
+
+                        <!-- Multi-Agent AI Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-robot mr-2"></i>
+                                Multi-Agent AI Analysis
+                            </h3>
+                            <div id="aiAnalysisResults"></div>
+                        </div>
+
+                        <!-- Transaction Flow Analysis -->
+                        <div class="card p-6 rounded-xl">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                Transaction Flow Analysis
+                            </h3>
+                            <div id="flowAnalysisResults"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payload Detail Modal -->
+    <div id="payloadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b">
+                <h3 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-code mr-2"></i>
+                    Payload Details - <span id="modalStepTitle">Step #</span>
+                </h3>
+                <button onclick="closePayloadModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <!-- Payload Type Tabs -->
+                <div class="flex space-x-2 mb-4 border-b">
+                    <button id="rawTab" onclick="switchPayloadTab('raw')" class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
+                        Raw Content
+                    </button>
+                    <button id="formattedTab" onclick="switchPayloadTab('formatted')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Formatted
+                    </button>
+                    <button id="extractedTab" onclick="switchPayloadTab('extracted')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Extracted Payloads
+                    </button>
+                </div>
+
+                <!-- Raw Content Tab -->
+                <div id="rawContent" class="tab-content">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <pre id="rawPayload" class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Formatted Content Tab -->
+                <div id="formattedContent" class="tab-content hidden">
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-900 mb-2">Step Information</h4>
+                            <div id="stepInfo" class="text-sm text-blue-800"></div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2">Formatted Payload</h4>
+                            <pre id="formattedPayload" class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Payloads Tab -->
+                <div id="extractedContent" class="tab-content hidden">
+                    <div id="extractedPayloads" class="space-y-4">
+                        <!-- Extracted payloads will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allBlocks = [];
+        let transactionSteps = [];
+
+        // File upload handlers
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        // Main file processing function
+        async function processFile(file) {
+            try {
+                // Show processing status
+                document.getElementById('processingStatus').classList.remove('hidden');
+                document.getElementById('processingStatus').classList.add('fade-in');
+                
+                // Update file info
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
+                    <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p class="text-blue-800">Analyzing real transaction steps...</p>
+                `;
+                
+                // Read file content
+                const fileContent = await readFileContent(file);
+                
+                // Parse JSON content
+                const parsedData = JSON.parse(fileContent);
+                
+                // Extract real transaction steps
+                transactionSteps = extractRealTransactionSteps(parsedData);
+                
+                // Update file info with results
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-blue-800"><strong>File:</strong> ${file.name}</p>
+                    <p class="text-blue-800"><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p class="text-green-800">✅ Analysis complete - ${transactionSteps.length} transaction steps found</p>
+                `;
+                
+                // Wait a moment then show results
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Display transaction steps analysis
+                displayTransactionStepsAnalysis();
+                
+                // Display analysis results
+                displayAnalysisResults();
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                document.getElementById('fileInfo').innerHTML = `
+                    <p class="text-red-800"><strong>Error:</strong> Failed to parse file</p>
+                    <p class="text-red-800">${error.message}</p>
+                `;
+            }
+        }
+
+        // Read file content as text
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+        }
+
+        // Extract real transaction steps from OpenGW log data
+        function extractRealTransactionSteps(data) {
+            const steps = [];
+            
+            if (Array.isArray(data)) {
+                data.forEach((entry, index) => {
+                    if (entry.content && entry.content.includes('OPENGW_MESSAGE_LOG')) {
+                        const step = parseTransactionStep(entry, index + 1);
+                        if (step) {
+                            steps.push(step);
+                        }
+                    }
+                });
+            }
+            
+            // Sort by timestamp to ensure correct order
+            steps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            return steps;
+        }
+
+        // Parse individual transaction step from log entry
+        function parseTransactionStep(entry, stepNumber) {
+            try {
+                const content = entry.content;
+                
+                // Extract timestamp
+                const timeMatch = content.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})/);
+                const timestamp = timeMatch ? timeMatch[1] : entry.__time__;
+                
+                // Extract direction and API type
+                const directionMatch = content.match(/\]\[([^\]]+)\]\[([^\]]+)\]\[([^\]]+)\]/);
+                const direction = directionMatch ? directionMatch[2] : 'UNKNOWN';
+                const apiType = directionMatch ? directionMatch[1] : 'UNKNOWN';
+                const endpoint = directionMatch ? directionMatch[3] : 'UNKNOWN';
+                
+                // Extract PSP information
+                let psp = 'Unknown';
+                if (content.includes('ALIPW3SG') || content.includes('ALIPW3BR')) psp = 'Alipay';
+                else if (content.includes('MASTERCARD') || content.includes('api.mastercard.com')) psp = 'Mastercard';
+                else if (content.includes('austreme')) psp = 'Austreme';
+                else if (content.includes('STONE') || content.includes('mundipagg')) psp = 'Stone/Mundipagg';
+                
+                // Extract payload size
+                const payloadSize = content.length;
+                
+                // Determine step type and optimization
+                const stepAnalysis = analyzeTransactionStep(content, direction, apiType, psp);
+                
+                return {
+                    stepNumber: stepNumber,
+                    timestamp: timestamp,
+                    direction: direction,
+                    apiType: apiType,
+                    endpoint: endpoint,
+                    psp: psp,
+                    payloadSize: payloadSize,
+                    content: content.substring(0, 200) + '...', // Truncate for display
+                    fullContent: content, // Store full content for detailed view
+                    analysis: stepAnalysis
+                };
+            } catch (error) {
+                console.error('Error parsing transaction step:', error);
+                return null;
+            }
+        }
+
+        // Analyze individual transaction step for optimizations
+        function analyzeTransactionStep(content, direction, apiType, psp) {
+            const optimizations = [];
+            
+            // Check for 3DS authentication
+            if (content.includes('"is3DSAuthentication":false')) {
+                optimizations.push({
+                    priority: 'HIGH',
+                    issue: '3DS Authentication Disabled',
+                    suggestion: 'Enable 3DS 2.0 for enhanced fraud protection',
+                    impact: 'Reduced fraud risk',
+                    source: 'Multi-Agent AI Analysis'
+                });
+            }
+            
+            // Check for large payloads
+            if (content.length > 2000) {
+                optimizations.push({
+                    priority: 'MEDIUM',
+                    issue: 'Large Payload Detected',
+                    suggestion: 'Implement payload compression',
+                    impact: 'Faster processing',
+                    source: 'Transaction Flow Analysis'
+                });
+            }
+            
+            // Check for XML format
+            if (content.includes('<?xml')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'XML Format Usage',
+                    suggestion: 'Convert to JSON for better performance',
+                    impact: 'Simplified parsing',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for external API calls
+            if (direction === 'OUTBOUND_REQUEST' && content.includes('https://')) {
+                optimizations.push({
+                    priority: 'MEDIUM',
+                    issue: 'External API Dependency',
+                    suggestion: 'Implement circuit breaker pattern',
+                    impact: 'Better error handling',
+                    source: 'PSP API Analysis'
+                });
+            }
+            
+            // Check for audit logging
+            if (content.includes('auditlog') || content.includes('austreme')) {
+                optimizations.push({
+                    priority: 'LOW',
+                    issue: 'Synchronous Audit Logging',
+                    suggestion: 'Implement asynchronous audit logging',
+                    impact: 'Reduced latency',
+                    source: 'Transaction Flow Analysis'
+                });
+            }
+            
+            return {
+                stepType: determineStepType(content, direction, apiType),
+                optimizations: optimizations,
+                processingTime: estimateProcessingTime(content, direction),
+                riskLevel: assessRiskLevel(content, psp)
+            };
+        }
+
+        // Determine the type of transaction step
+        function determineStepType(content, direction, apiType) {
+            if (content.includes('payments/pay')) return 'Payment Request';
+            if (content.includes('tokenize')) return 'Card Tokenization';
+            if (content.includes('authorize')) return 'Authorization';
+            if (content.includes('capture')) return 'Payment Capture';
+            if (content.includes('auditlog')) return 'Audit Logging';
+            if (content.includes('notify')) return 'Notification';
+            return 'Processing';
+        }
+
+        // Estimate processing time for the step
+        function estimateProcessingTime(content, direction) {
+            if (direction === 'OUTBOUND_REQUEST') return 'Variable (depends on external API)';
+            if (content.length > 2000) return 'High (large payload)';
+            if (content.includes('encrypt')) return 'Medium (encryption)';
+            return 'Low';
+        }
+
+        // Assess risk level of the step
+        function assessRiskLevel(content, psp) {
+            let risk = 'LOW';
+            if (content.includes('"is3DSAuthentication":false')) risk = 'HIGH';
+            else if (content.includes('card') || content.includes('payment')) risk = 'MEDIUM';
+            return risk;
+        }
+
+        // Display transaction steps analysis
+        function displayTransactionStepsAnalysis() {
+            if (!transactionSteps || transactionSteps.length === 0) {
+                return;
+            }
+            
+            const stepsHtml = transactionSteps.map((step, index) => `
+                <div class="step-card bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full mr-3">Step ${step.stepNumber}</span>
+                            <h4 class="font-semibold text-gray-900">${step.analysis.stepType}</h4>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openPayloadModal(transactionSteps[${index}])" 
+                                    class="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>
+                                View Detail
+                            </button>
+                            <div class="text-xs text-gray-500">${step.timestamp}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Direction:</span>
+                            <div class="text-sm">${step.direction}</div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">PSP:</span>
+                            <div class="text-sm">${step.psp}</div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-600">Risk Level:</span>
+                            <div class="text-sm">
+                                <span class="px-2 py-1 rounded text-xs ${getRiskLevelClass(step.analysis.riskLevel)}">
+                                    ${step.analysis.riskLevel}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${step.analysis.optimizations.length > 0 ? `
+                        <div class="border-t pt-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Optimizations:</h5>
+                            ${step.analysis.optimizations.map(opt => `
+                                <div class="bg-gray-50 p-2 rounded mb-2">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-medium">${opt.issue}</span>
+                                        <span class="text-white text-xs px-2 py-1 rounded ${getPriorityClass(opt.priority)}">${opt.priority}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-600 mb-1">${opt.suggestion}</div>
+                                    <div class="text-xs text-green-600">Impact: ${opt.impact}</div>
+                                    <div class="text-xs text-blue-600">Source: ${opt.source}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div class="text-xs text-green-600 border-t pt-2">✅ No optimizations needed - step is optimal</div>'}
+                </div>
+            `).join('');
+            
+            document.getElementById('stepsContainer').innerHTML = stepsHtml;
+            document.getElementById('stepsAnalysis').classList.remove('hidden');
+            document.getElementById('stepsAnalysis').classList.add('fade-in');
+        }
+
+        // Display analysis results summary
+        function displayAnalysisResults() {
+            // PSP API Analysis
+            const pspAnalysis = generatePSPAnalysis();
+            document.getElementById('pspAnalysisResults').innerHTML = pspAnalysis;
+            
+            // Multi-Agent AI Analysis
+            const aiAnalysis = generateAIAnalysis();
+            document.getElementById('aiAnalysisResults').innerHTML = aiAnalysis;
+            
+            // Transaction Flow Analysis
+            const flowAnalysis = generateFlowAnalysis();
+            document.getElementById('flowAnalysisResults').innerHTML = flowAnalysis;
+            
+            document.getElementById('analysisResults').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('fade-in');
+        }
+
+        // Generate PSP API Analysis summary
+        function generatePSPAnalysis() {
+            const psps = [...new Set(transactionSteps.map(step => step.psp))];
+            const apiTypes = [...new Set(transactionSteps.map(step => step.apiType))];
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">PSPs Detected:</span> ${psps.join(', ')}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">API Types:</span> ${apiTypes.join(', ')}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Total Steps:</span> ${transactionSteps.length}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate AI Analysis summary
+        function generateAIAnalysis() {
+            const highRiskSteps = transactionSteps.filter(step => step.analysis.riskLevel === 'HIGH').length;
+            const securityIssues = transactionSteps.filter(step => 
+                step.analysis.optimizations.some(opt => opt.issue.includes('3DS'))
+            ).length;
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">High Risk Steps:</span> ${highRiskSteps}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Security Issues:</span> ${securityIssues}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Risk Assessment:</span> ${highRiskSteps > 0 ? 'Needs Attention' : 'Good'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Flow Analysis summary
+        function generateFlowAnalysis() {
+            const totalOptimizations = transactionSteps.reduce((sum, step) => sum + step.analysis.optimizations.length, 0);
+            const avgPayloadSize = transactionSteps.reduce((sum, step) => sum + step.payloadSize, 0) / transactionSteps.length;
+            
+            return `
+                <div class="space-y-3">
+                    <div class="text-sm">
+                        <span class="font-medium">Optimization Opportunities:</span> ${totalOptimizations}
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Avg Payload Size:</span> ${Math.round(avgPayloadSize)} bytes
+                    </div>
+                    <div class="text-sm">
+                        <span class="font-medium">Flow Efficiency:</span> ${totalOptimizations < 5 ? 'Good' : 'Needs Improvement'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions for CSS classes
+        function getRiskLevelClass(riskLevel) {
+            switch(riskLevel) {
+                case 'HIGH': return 'bg-red-100 text-red-800';
+                case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+                case 'LOW': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getPriorityClass(priority) {
+            switch(priority) {
+                case 'HIGH': return 'bg-red-500';
+                case 'MEDIUM': return 'bg-yellow-500';
+                case 'LOW': return 'bg-blue-500';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        // Payload parsing and formatting utilities
+        class PayloadParser {
+            static parseAndFormat(content) {
+                const results = {
+                    raw: content,
+                    formatted: null,
+                    extracted: [],
+                    type: 'string'
+                };
+
+                try {
+                    // Try to detect and parse different payload types
+                    results.extracted = this.extractAllPayloads(content);
+                    results.formatted = this.formatContent(content);
+                    results.type = this.detectContentType(content);
+                } catch (error) {
+                    console.error('Error parsing payload:', error);
+                    results.formatted = content;
+                }
+
+                return results;
+            }
+
+            static extractAllPayloads(content) {
+                const payloads = [];
+                
+                // Extract JSON payloads from MESSAGE_ENVELOPE_CONTENT
+                const jsonMatches = content.match(/\[MESSAGE_ENVELOPE_CONTENT\]\[(.*?)\]\[MESSAGE_ENVELOPE_EXTRA\]/g);
+                if (jsonMatches) {
+                    jsonMatches.forEach((match, index) => {
+                        const jsonContent = match.replace(/\[MESSAGE_ENVELOPE_CONTENT\]\[/, '').replace(/\]\[MESSAGE_ENVELOPE_EXTRA\]/, '');
+                        
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(jsonContent);
+                        
+                        payloads.push({
+                            type: 'MESSAGE_ENVELOPE_CONTENT',
+                            index: index + 1,
+                            content: jsonContent,
+                            parsed: processedPayload
+                        });
+                    });
+                }
+
+                // Extract XML payloads
+                const xmlMatches = content.match(/<\?xml[\s\S]*?<\/[^>]+>/g);
+                if (xmlMatches) {
+                    xmlMatches.forEach((match, index) => {
+                        payloads.push({
+                            type: 'XML',
+                            index: index + 1,
+                            content: match,
+                            parsed: {
+                                type: 'XML',
+                                formatted: this.formatXML(match),
+                                data: match
+                            }
+                        });
+                    });
+                }
+
+                // Extract nested JSON from CDATA sections
+                const cdataMatches = content.match(/<!\[CDATA\[(.*?)\]\]>/g);
+                if (cdataMatches) {
+                    cdataMatches.forEach((match, index) => {
+                        const cdataContent = match.replace(/<!\[CDATA\[/, '').replace(/\]\]>/, '');
+                        
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(cdataContent);
+                        
+                        payloads.push({
+                            type: 'CDATA_JSON',
+                            index: index + 1,
+                            content: cdataContent,
+                            parsed: processedPayload
+                        });
+                    });
+                }
+
+                // Extract any other escaped JSON strings in the content
+                const escapedJsonMatches = this.findEscapedJsonStrings(content);
+                if (escapedJsonMatches.length > 0) {
+                    escapedJsonMatches.forEach((match, index) => {
+                        // Always try to recursively process and convert escaped JSON
+                        const processedPayload = this.recursivelyProcessPayload(match);
+                        
+                        payloads.push({
+                            type: 'ESCAPED_TEXT',
+                            index: index + 1,
+                            content: match,
+                            parsed: processedPayload
+                        });
+                    });
+                }
+
+                return payloads;
+            }
+
+            // New method to recursively process payloads and convert all escaped JSON to JSON
+            static recursivelyProcessPayload(content) {
+                try {
+                    // First, try to parse as direct JSON
+                    const directJson = JSON.parse(content);
+                    return {
+                        type: 'JSON',
+                        formatted: JSON.stringify(directJson, null, 2),
+                        data: directJson
+                    };
+                } catch (error) {
+                    // If direct parsing fails, check for escaped JSON patterns
+                    if (this.detectEscapedJson(content)) {
+                        try {
+                            // Attempt to unescape and parse as JSON
+                            const unescapedContent = this.smartUnescapeAndParse(content);
+                            return {
+                                type: 'JSON',
+                                formatted: JSON.stringify(unescapedContent, null, 2),
+                                data: unescapedContent
+                            };
+                        } catch (unescapeError) {
+                            // If unescaping fails, try progressive unescaping
+                            const progressiveResult = this.progressiveUnescapeAndParse(content);
+                            if (progressiveResult) {
+                                return {
+                                    type: 'JSON',
+                                    formatted: JSON.stringify(progressiveResult, null, 2),
+                                    data: progressiveResult
+                                };
+                            }
+                        }
+                    }
+                    
+                    // Check if content contains nested escaped JSON strings
+                    const nestedJsonResult = this.extractNestedEscapedJson(content);
+                    if (nestedJsonResult) {
+                        return {
+                            type: 'JSON',
+                            formatted: JSON.stringify(nestedJsonResult, null, 2),
+                            data: nestedJsonResult
+                        };
+                    }
+                    
+                    // If all JSON parsing attempts fail, return as formatted text
+                    return {
+                        type: 'TEXT',
+                        formatted: content,
+                        data: content
+                    };
+                }
+            }
+
+            // New method for progressive unescaping of deeply nested escaped JSON
+            static progressiveUnescapeAndParse(content) {
+                let current = content;
+                let maxAttempts = 5; // Prevent infinite loops
+                
+                for (let i = 0; i < maxAttempts; i++) {
+                    try {
+                        // Try to parse current content as JSON
+                        return JSON.parse(current);
+                    } catch (error) {
+                        // If parsing fails, try to unescape one level
+                        if (this.detectEscapedJson(current)) {
+                            current = this.unescapeJsonString(current);
+                        } else {
+                            break; // No more escaping detected
+                        }
+                    }
+                }
+                
+                return null; // Could not parse after all attempts
+            }
+
+            // New method to extract and convert nested escaped JSON within text
+            static extractNestedEscapedJson(content) {
+                // Look for JSON-like patterns within the content
+                const jsonPatterns = [
+                    /\{[^{}]*"[^"]*"[^{}]*:[^{}]*"[^"]*"[^{}]*\}/g, // Simple JSON objects
+                    /\[[^\[\]]*\{[^{}]*\}[^\[\]]*\]/g, // Arrays containing objects
+                    /"(\{[^"]*\})"/g, // Quoted JSON objects
+                    /"(\[[^\]]*\])"/g // Quoted JSON arrays
+                ];
+                
+                for (const pattern of jsonPatterns) {
+                    const matches = content.match(pattern);
+                    if (matches) {
+                        for (const match of matches) {
+                            try {
+                                // Try to parse the match directly
+                                return JSON.parse(match);
+                            } catch (error) {
+                                try {
+                                    // Try to unescape and parse
+                                    const unescaped = this.unescapeJsonString(match);
+                                    return JSON.parse(unescaped);
+                                } catch (unescapeError) {
+                                    // Continue to next match
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return null; // No valid JSON found
+            }
+
+            static formatContent(content) {
+                try {
+                    // Try to format as JSON first
+                    const parsed = JSON.parse(content);
+                    return JSON.stringify(parsed, null, 2);
+                } catch (error) {
+                    // Try to format as XML
+                    if (content.trim().startsWith('<')) {
+                        return this.formatXML(content);
+                    }
+                    
+                    // Return original content if no formatting possible
+                    return content;
+                }
+            }
+
+            static formatXML(xmlString) {
+                try {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                    
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        return xmlString; // Return original if parsing fails
+                    }
+                    
+                    return this.xmlToString(xmlDoc, 0);
+                } catch (error) {
+                    return xmlString;
+                }
+            }
+
+            static xmlToString(node, indent = 0) {
+                const indentStr = '  '.repeat(indent);
+                
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent.trim();
+                    return text ? text : '';
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    let result = `${indentStr}<${node.nodeName}`;
+                    
+                    // Add attributes
+                    for (let attr of node.attributes || []) {
+                        result += ` ${attr.name}="${attr.value}"`;
+                    }
+                    
+                    if (node.childNodes.length === 0) {
+                        result += '/>';
+                        return result;
+                    }
+                    
+                    result += '>';
+                    
+                    let hasElementChildren = false;
+                    for (let child of node.childNodes) {
+                        if (child.nodeType === Node.ELEMENT_NODE) {
+                            hasElementChildren = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasElementChildren) {
+                        result += '\n';
+                        for (let child of node.childNodes) {
+                            const childStr = this.xmlToString(child, indent + 1);
+                            if (childStr.trim()) {
+                                result += childStr + '\n';
+                            }
+                        }
+                        result += `${indentStr}</${node.nodeName}>`;
+                    } else {
+                        // Only text content
+                        let textContent = '';
+                        for (let child of node.childNodes) {
+                            if (child.nodeType === Node.TEXT_NODE) {
+                                textContent += child.textContent;
+                            }
+                        }
+                        result += textContent + `</${node.nodeName}>`;
+                    }
+                    
+                    return result;
+                }
+                
+                return '';
+            }
+
+            static unescapeJsonString(str) {
+                return str
+                    .replace(/\\"/g, '"')
+                    .replace(/\\\\/g, '\\')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\r/g, '\r')
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\f/g, '\f')
+                    .replace(/\\b/g, '\b');
+            }
+
+            static detectContentType(content) {
+                if (content.trim().startsWith('<')) return 'XML';
+                
+                try {
+                    JSON.parse(content);
+                    return 'JSON';
+                } catch (error) {
+                    if (content.includes('\\"') && content.includes('\\n')) {
+                        return 'ESCAPED_JSON';
+                    }
+                    return 'TEXT';
+                }
+            }
+
+            static detectEscapedJson(content) {
+                // Check for common escaped JSON patterns
+                const escapedPatterns = [
+                    /\\"/g,  // Escaped quotes
+                    /\\n/g,  // Escaped newlines
+                    /\\{/g,  // Escaped braces
+                    /\\}/g,  // Escaped braces
+                    /\\\\/g  // Escaped backslashes
+                ];
+                
+                let escapeCount = 0;
+                escapedPatterns.forEach(pattern => {
+                    const matches = content.match(pattern);
+                    if (matches) escapeCount += matches.length;
+                });
+                
+                // If we have multiple escape sequences and it looks like JSON structure
+                return escapeCount > 2 && (content.includes('\\"{') || content.includes('}\\\"'));
+            }
+
+            static smartUnescapeAndParse(content) {
+                // Try multiple levels of unescaping
+                let unescaped = content;
+                let attempts = 0;
+                const maxAttempts = 3;
+                
+                while (attempts < maxAttempts) {
+                    try {
+                        // Try to parse as JSON
+                        return JSON.parse(unescaped);
+                    } catch (error) {
+                        // If parsing fails, try unescaping one more level
+                        const newUnescaped = this.unescapeJsonString(unescaped);
+                        if (newUnescaped === unescaped) {
+                            // No more unescaping possible
+                            break;
+                        }
+                        unescaped = newUnescaped;
+                        attempts++;
+                    }
+                }
+                
+                // If we still can't parse, throw the last error
+                throw new Error('Unable to parse as JSON after unescaping');
+            }
+
+            static findEscapedJsonStrings(content) {
+                const matches = [];
+                
+                // Look for patterns that might be escaped JSON
+                // Pattern 1: Strings that start and end with escaped quotes and contain JSON-like structure
+                const pattern1 = /\\"[^"]*\{[^}]*\}[^"]*\\"/g;
+                let match;
+                while ((match = pattern1.exec(content)) !== null) {
+                    matches.push(match[0]);
+                }
+                
+                // Pattern 2: Look for escaped JSON in specific contexts (like within other JSON)
+                const pattern2 = /"[^"]*\\{[^}]*\\}[^"]*"/g;
+                while ((match = pattern2.exec(content)) !== null) {
+                    // Remove the outer quotes
+                    const innerContent = match[0].slice(1, -1);
+                    if (this.detectEscapedJson(innerContent)) {
+                        matches.push(innerContent);
+                    }
+                }
+                
+                return matches;
+            }
+
+            static tryParseContent(content) {
+                try {
+                    // First try direct JSON parsing
+                    const parsed = JSON.parse(content);
+                    return {
+                        type: 'JSON',
+                        formatted: JSON.stringify(parsed, null, 2),
+                        data: parsed
+                    };
+                } catch (error) {
+                    // Try XML parsing
+                    if (content.trim().startsWith('<')) {
+                        return {
+                            type: 'XML',
+                            formatted: this.formatXML(content),
+                            data: content
+                        };
+                    }
+                    
+                    // Try escaped JSON parsing
+                    if (this.detectEscapedJson(content)) {
+                        try {
+                            const unescaped = this.smartUnescapeAndParse(content);
+                            return {
+                                type: 'JSON',
+                                formatted: JSON.stringify(unescaped, null, 2),
+                                data: unescaped
+                            };
+                        } catch (unescapeError) {
+                            // Fall through to text
+                        }
+                    }
+                    
+                    // Default to text
+                    return {
+                        type: 'TEXT',
+                        formatted: content,
+                        data: content
+                    };
+                }
+            }
+        }
+
+        // Modal control functions
+        function openPayloadModal(stepData) {
+            const modal = document.getElementById('payloadModal');
+            const modalTitle = document.getElementById('modalStepTitle');
+            
+            modalTitle.textContent = `Step ${stepData.stepNumber}`;
+            
+            // Parse the payload
+            const parsedPayload = PayloadParser.parseAndFormat(stepData.fullContent || stepData.content);
+            
+            // Store parsed data for tab switching
+            window.currentPayloadData = {
+                step: stepData,
+                parsed: parsedPayload
+            };
+            
+            // Show raw content by default
+            switchPayloadTab('raw');
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePayloadModal() {
+            const modal = document.getElementById('payloadModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchPayloadTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all tabs
+            document.querySelectorAll('#payloadModal button[id$="Tab"]').forEach(tab => {
+                tab.classList.remove('text-blue-600', 'border-blue-600');
+                tab.classList.add('text-gray-500');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}Content`).classList.remove('hidden');
+            
+            // Add active state to selected tab
+            const activeTab = document.getElementById(`${tabName}Tab`);
+            activeTab.classList.remove('text-gray-500');
+            activeTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            
+            // Populate content based on tab
+            const data = window.currentPayloadData;
+            if (!data) return;
+            
+            switch (tabName) {
+                case 'raw':
+                    document.getElementById('rawPayload').textContent = data.parsed.raw;
+                    break;
+                    
+                case 'formatted':
+                    populateFormattedTab(data);
+                    break;
+                    
+                case 'extracted':
+                    populateExtractedTab(data);
+                    break;
+            }
+        }
+
+        function populateFormattedTab(data) {
+            const stepInfo = document.getElementById('stepInfo');
+            const formattedPayload = document.getElementById('formattedPayload');
+            
+            stepInfo.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>Timestamp:</strong> ${data.step.timestamp}</div>
+                    <div><strong>Direction:</strong> ${data.step.direction}</div>
+                    <div><strong>API Type:</strong> ${data.step.apiType}</div>
+                    <div><strong>PSP:</strong> ${data.step.psp}</div>
+                    <div><strong>Endpoint:</strong> ${data.step.endpoint}</div>
+                    <div><strong>Content Type:</strong> ${data.parsed.type}</div>
+                </div>
+            `;
+            
+            formattedPayload.textContent = data.parsed.formatted || data.parsed.raw;
+        }
+
+        function populateExtractedTab(data) {
+            const container = document.getElementById('extractedPayloads');
+            
+            if (data.parsed.extracted.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>No extractable payloads found in this step.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = data.parsed.extracted.map((payload, index) => `
+                <div class="border rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h5 class="font-semibold text-gray-900">
+                            ${payload.type} #${payload.index}
+                        </h5>
+                        <span class="px-2 py-1 text-xs font-medium rounded ${getPayloadTypeClass(payload.parsed.type)}">
+                            ${payload.parsed.type}
+                        </span>
+                    </div>
+                    <pre class="text-sm text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto bg-gray-50 p-3 rounded">${payload.parsed.formatted}</pre>
+                </div>
+            `).join('');
+        }
+
+        function getPayloadTypeClass(type) {
+            switch (type) {
+                case 'JSON': return 'bg-green-100 text-green-800';
+                case 'XML': return 'bg-blue-100 text-blue-800';
+                case 'ESCAPED_JSON': return 'bg-orange-100 text-orange-800';
+                case 'TEXT': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        // Navigation function
+        function showSection(sectionName) {
+            // This function can be expanded for multiple sections
+        }
+    </script>
+</body>
+</html>
